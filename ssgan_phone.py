@@ -612,6 +612,7 @@ def reconstruct_video(iteration):
 # disentangle
 fixed_data, fixed_y = dev_gen().next()
 fixed_y = binarize_labels(fixed_y)
+print fixed_y.shape()
 dis_y = tf.constant(binarize_labels(np.ones(BATCH_SIZE, dtype=int)))
 dis_g = tf.constant(np.tile(np.random.normal(size=(1, DIM_LATENT_G)).astype('float32'), [BATCH_SIZE, 1]))
 dis_x = Generator(dis_g, q_z_l, dis_y)
@@ -679,7 +680,7 @@ with tf.Session() as session:
         lib.plot.tick()
 
         # Generation and reconstruction
-        if iteration % 5000 == 4999:
+        if iteration % 100 == 99:
             generate_video(iteration, _data)
             reconstruct_video(iteration)
             disentangle(iteration)
