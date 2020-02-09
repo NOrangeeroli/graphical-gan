@@ -61,7 +61,7 @@ def phone_generator_audio(data_all, clip_length, seq_length, batch_size):
     
     def get_epoch():
         rng_state = np.random.get_state()
-        np.random.shuffle(audios)
+        np.random.shuffle(audios_pre)
         np.random.set_state(rng_state)
         np.random.shuffle(labels)
         audios=[]
