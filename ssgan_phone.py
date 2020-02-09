@@ -575,7 +575,7 @@ def inf_train_gen():
 
 # For visualization
 def wav(x, iteration, num, name):
-    x = x.reshape((num, LEN*1*10000))
+    x = x.reshape((num, -1))
     import os
     dir=os.path.join(outf, name+'_'+str(iteration)+'/')
     if not os.path.isdir(dir):
