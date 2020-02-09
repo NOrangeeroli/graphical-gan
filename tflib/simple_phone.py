@@ -70,18 +70,21 @@ def phone_generator_audio(data_all, clip_length, seq_length, batch_size):
             audios.append(np.concatenate((a[start:],a[:start])))
 
         
-
+        audios=[np.squeeze(a) for a in audios]
 
         # start_y, start_x = GetRandomTrajectory(step_length = step_length, seq_length = seq_length, batch_size = images.shape[0]*num_digits, image_size = image_size, digit_size = digit_size)
 
         data = []
         data_label = []
-        for i in xrange(int(audios[0]/(seq_length*clip_length)*2)):
+        for i in xrange(int(len(audios[0])/(seq_length*clip_length)*2)):
             data_len=len(data)
             for a,l in zip(audios,labels):
                 if i*seq_length*clip_length>=len(a):
                     continue
-                data.append(a[i*seq_length*clip_length   :  min(len(a),(i+1)*seq_length*clip_length)  ])
+                new=a[i*seq_length*clip_length   :  min(len(a),(i+1)*seq_length*clip_length)  ]
+                if len(new)<seq_length*clip_length:
+                    new=np.pad(new,(0,seq_length*clip_length-len(new)),'constant')
+                data.append( new )
                 data_label.append(l)
             if len(data)==data_len:
                 break
