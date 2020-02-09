@@ -109,6 +109,7 @@ def load_audio(clip_length,seq_length, batch_size, cla=None):
     train_all_y = y
     test_x = [i[int(len(i)/3*2):] for i in x]
     test_y = y
+    test_data=(test_x,test_y)
 
 
 
