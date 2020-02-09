@@ -584,13 +584,16 @@ def wav(x, iteration, num, name):
     lib.save_wavs.save_wavs(x, dir, size=None)
 
 # For generation
+fixed_data, fixed_y = dev_gen().next()
+fixed_y = binarize_labels(fixed_y)
 pre_fixed_noise = tf.constant(np.random.normal(size=(N_VIS, DIM_LATENT_L)).astype('float32'))
 fixed_y = tf.constant(np.tile(np.eye(N_C, dtype=int), (N_VIS/N_C, 1)).astype(np.float32))
 fixed_noise_g = tf.constant(np.random.normal(size=(N_VIS, DIM_LATENT_G)).astype('float32'))
 fixed_noise_l = q_z_l#DynamicGenerator(pre_fixed_noise)
 fixed_noise_samples = Generator(fixed_noise_g, fixed_noise_l, fixed_y)
 def generate_video(iteration, data):
-    samples = session.run(fixed_noise_samples)
+    
+    samples = session.run(fixed_noise_samples, feed_dict={real_x_unit: fixed_data, real_y:fixed_y})
     samples = samples*15000.0
     wav(samples, iteration, N_VIS, 'samples')
     wav(data, iteration, BATCH_SIZE, 'train_data')
