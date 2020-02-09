@@ -592,7 +592,7 @@ fixed_noise_g = tf.constant(np.random.normal(size=(N_VIS, DIM_LATENT_G)).astype(
 fixed_noise_l = q_z_l#DynamicGenerator(pre_fixed_noise)
 fixed_noise_samples = Generator(fixed_noise_g, fixed_noise_l, fixed_y)
 def generate_video(iteration, data):
-    
+
     samples = session.run(fixed_noise_samples, feed_dict={real_x_unit: fixed_data, real_y:fixed_y})
     samples = samples*15000.0
     wav(samples, iteration, N_VIS, 'samples')
@@ -615,7 +615,7 @@ def reconstruct_video(iteration):
 # disentangle
 fixed_data, fixed_y = dev_gen().next()
 fixed_y = binarize_labels(fixed_y)
-print fixed_y.shape()
+print fixed_y
 dis_y = tf.constant(binarize_labels(np.ones(BATCH_SIZE, dtype=int)))
 dis_g = tf.constant(np.tile(np.random.normal(size=(1, DIM_LATENT_G)).astype('float32'), [BATCH_SIZE, 1]))
 dis_x = Generator(dis_g, q_z_l, dis_y)
