@@ -627,7 +627,7 @@ def disentangle(iteration):
         tmp_list.append(fixed_data[i])
         tmp_list.append(samples[i])
     samples = np.vstack(tmp_list)
-    vis(samples, iteration, BATCH_SIZE*2, 'disentangle')
+    wav(samples, iteration, BATCH_SIZE*2, 'disentangle')
 
 
 '''
