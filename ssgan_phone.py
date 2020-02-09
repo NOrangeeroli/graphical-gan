@@ -567,7 +567,7 @@ elif MODE == 'alice-z':
     gen_cost, disc_cost, gen_train_op, disc_train_op = lib.objs.gan_inference.alice(disc_fake, disc_real, rec_penalty, gen_params+ext_params, disc_params, lr=LR, beta1=BETA1)
 
 # Dataset iterator
-train_gen, dev_gen = lib.simple_phone.load_audio(OUTPUT_DIM[-1],LEN,BATCH_SIZE)
+train_gen, dev_gen = lib.simple_phone.load_audio(OUTPUT_DIM,LEN,BATCH_SIZE)
 def inf_train_gen():
     while True:
         for audios, labels in train_gen():
