@@ -544,7 +544,7 @@ disc_params = lib.params_with_name('Discriminator')
 
 if MODE == 'local_ep':
     rec_penalty = None
-    gen_cost, disc_cost, _, _, gen_train_op, disc_train_op = 
+    gen_cost, disc_cost, _, _, gen_train_op, disc_train_op = \
     lib.objs.gan_inference.weighted_local_epce(disc_fake, 
         disc_real, 
         ratio,
