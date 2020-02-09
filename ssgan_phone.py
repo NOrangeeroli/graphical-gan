@@ -46,7 +46,7 @@ N_C = 12 # number of classes
 # optimization
 LAMBDA = 0.1 # reconstruction
 LR = 1e-4 # learning rate
-BATCH_SIZE = 50 # batch size
+BATCH_SIZE = 48 # batch size
 BETA1 = .5 # adam
 BETA2 = .999 # adam
 ITERS = 100000 # number of iterations to train
