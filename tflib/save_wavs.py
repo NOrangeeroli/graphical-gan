@@ -51,6 +51,7 @@ def save_wavs(x, save_path, size=None):
         f.setnchannels(1)
         f.setsampwidth(2)
         f.setframerate(22050)
+        w=np.array([int(i) for i in w]).astype(np.short)
         f.writeframes(w.tostring())
         f.close()
 
