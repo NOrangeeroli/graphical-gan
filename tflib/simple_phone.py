@@ -70,7 +70,7 @@ def phone_generator_audio(data_all, clip_length, seq_length, batch_size):
             audios.append(np.concatenate((a[start:],a[:start])))
 
         
-        audios=[np.squeeze(a) for a in audios]
+        
 
         # start_y, start_x = GetRandomTrajectory(step_length = step_length, seq_length = seq_length, batch_size = images.shape[0]*num_digits, image_size = image_size, digit_size = digit_size)
 
@@ -105,6 +105,7 @@ def load_audio(clip_length,seq_length, batch_size, cla=None):
         # urllib.urlretrieve(url, filepath)
     with gzip.open('/tmp/phone.pkl.gz', 'rb') as f:
         x, y = pickle.load(f)
+    x=[np.squeeze(a) for a in x]
     train_all_x = [i[:int(len(i)/3*2)] for i in x]
     train_all_y = y
     test_x = [i[int(len(i)/3*2):] for i in x]
