@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
-
+import simple_phone
+import save_wavs
 import locale
 locale.setlocale(locale.LC_ALL, '')
 
