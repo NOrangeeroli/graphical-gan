@@ -100,7 +100,7 @@ def Deconv1D(
 
         result = tf.nn.conv1d_transpose(
             input=inputs, 
-            filter=filters,
+            filters=filters,
             output_shape=output_shape, 
             strides=stride,
             padding=padding,

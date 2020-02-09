@@ -4,7 +4,8 @@ Image grid saver, based on color_grid_vis from github.com/Newmu
 
 import numpy as np
 import scipy.misc
-from scipy.misc import imsave
+#from scipy.misc import imsave
+from imageio import imwrite as imsave
 import imageio
 
 

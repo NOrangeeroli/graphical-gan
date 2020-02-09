@@ -25,7 +25,7 @@ hyperparameters
 '''
 # model type
 MODE = 'local_ep' # local_ep, local_epce-z, ali, alice-z
-POS_MODE = 'inverse' # gsp, naive_mean_field, inverse
+POS_MODE = 'naive_mean_field' # gsp, naive_mean_field, inverse
 ALI_MODE = 'concat_x' # concat_x, concat_z, 3dcnn
 OP_DYN_MODE = 'res' # res, res_w
 BN_FLAG = False
@@ -39,14 +39,14 @@ DIM_LATENT_T = DIM_LATENT_L # transformation latent variable
 DIM = 32 # model size of frame generator
 DIM_OP = 256 # model size of the dynamic operator
 # data
-LEN = 16 # data length
-OUTPUT_SHAPE = [1, 64, 64] # data shape
+LEN = 10 # data length
+OUTPUT_SHAPE = [1,8192] # data shape
 OUTPUT_DIM = np.prod(OUTPUT_SHAPE) # data dim
-N_C = 10 # number of classes
+N_C = 12 # number of classes
 # optimization
 LAMBDA = 0.1 # reconstruction
 LR = 1e-4 # learning rate
-BATCH_SIZE = 50 # batch size
+BATCH_SIZE = 48 # batch size
 BETA1 = .5 # adam
 BETA2 = .999 # adam
 ITERS = 100000 # number of iterations to train
@@ -178,28 +178,28 @@ def Generator(z_g, z_l, labels):
 
     z = tf.reshape(z, [BATCH_SIZE*LEN, DIM_LATENT_G+DIM_LATENT_L+N_C])
 
-    output = lib.ops.linear.Linear('Generator.Input', DIM_LATENT_G+DIM_LATENT_L+N_C, 4*4*8*DIM, z)
+    output = lib.ops.linear.Linear('Generator.Input', DIM_LATENT_G+DIM_LATENT_L+N_C, 512*8*DIM, z)
     if BN_FLAG_G:
         output = lib.ops.batchnorm.Batchnorm('Generator.BN1', [0], output)
     output = tf.nn.relu(output)
-    output = tf.reshape(output, [BATCH_SIZE*LEN, 8*DIM, 4, 4])
+    output = tf.reshape(output, [BATCH_SIZE*LEN, 8*DIM, -1])
 
-    output = lib.ops.deconv2d.Deconv2D('Generator.2', 8*DIM, 4*DIM, 5, output)
+    output = lib.ops.deconv1d.Deconv1D('Generator.2', 8*DIM, 4*DIM, 5, output)
     if BN_FLAG_G:
-        output = lib.ops.batchnorm.Batchnorm('Generator.BN2', [0,2,3], output)
+        output = lib.ops.batchnorm.Batchnorm('Generator.BN2', [0,2], output)
     output = tf.nn.relu(output)
 
-    output = lib.ops.deconv2d.Deconv2D('Generator.3', 4*DIM, 2*DIM, 5, output)
+    output = lib.ops.deconv1d.Deconv1D('Generator.3', 4*DIM, 2*DIM, 5, output)
     if BN_FLAG_G:
-        output = lib.ops.batchnorm.Batchnorm('Generator.BN3', [0,2,3], output)
+        output = lib.ops.batchnorm.Batchnorm('Generator.BN3', [0,2], output)
     output = tf.nn.relu(output)
 
-    output = lib.ops.deconv2d.Deconv2D('Generator.4', 2*DIM, DIM, 5, output)
+    output = lib.ops.deconv1d.Deconv1D('Generator.4', 2*DIM, DIM, 5, output)
     if BN_FLAG_G:
-        output = lib.ops.batchnorm.Batchnorm('Generator.BN4', [0,2,3], output)
+        output = lib.ops.batchnorm.Batchnorm('Generator.BN4', [0,2], output)
     output = tf.nn.relu(output)
 
-    output = lib.ops.deconv2d.Deconv2D('Generator.5', DIM, 1, 5, output)
+    output = lib.ops.deconv1d.Deconv1D('Generator.5', DIM, 1, 5, output)
     output = tf.tanh(output)
 
     return tf.reshape(output, [BATCH_SIZE, LEN, OUTPUT_DIM])
@@ -208,56 +208,56 @@ def Extractor(inputs, labels):
     output = tf.reshape(inputs, [BATCH_SIZE*LEN,] + OUTPUT_SHAPE)
     labels = expand_labels(labels)
 
-    output = lib.ops.conv2d.Conv2D('Extractor.1', 1, DIM, 5, output, stride=2)
+    output = lib.ops.conv1d.Conv1D('Extractor.1', 1, DIM, 5, output, stride=2)
     output = LeakyReLU(output)
 
-    output = lib.ops.conv2d.Conv2D('Extractor.2', DIM, 2*DIM, 5, output, stride=2)
+    output = lib.ops.conv1d.Conv1D('Extractor.2', DIM, 2*DIM, 5, output, stride=2)
     if BN_FLAG_E:
-        output = lib.ops.batchnorm.Batchnorm('Extractor.BN2', [0,2,3], output)
+        output = lib.ops.batchnorm.Batchnorm('Extractor.BN2', [0,2], output)
     output = LeakyReLU(output)
 
-    output = lib.ops.conv2d.Conv2D('Extractor.3', 2*DIM, 4*DIM, 5, output, stride=2)
+    output = lib.ops.conv1d.Conv1D('Extractor.3', 2*DIM, 4*DIM, 5, output, stride=2)
     if BN_FLAG_E:
-        output = lib.ops.batchnorm.Batchnorm('Extractor.BN3', [0,2,3], output)
+        output = lib.ops.batchnorm.Batchnorm('Extractor.BN3', [0,2], output)
     output = LeakyReLU(output)
 
-    output = lib.ops.conv2d.Conv2D('Extractor.4', 4*DIM, 8*DIM, 5, output, stride=2)
+    output = lib.ops.conv1d.Conv1D('Extractor.4', 4*DIM, 8*DIM, 5, output, stride=2)
     if BN_FLAG_E:
-        output = lib.ops.batchnorm.Batchnorm('Extractor.BN4', [0,2,3], output)
+        output = lib.ops.batchnorm.Batchnorm('Extractor.BN4', [0,2], output)
     output = LeakyReLU(output)
-
-    output = tf.reshape(output, [BATCH_SIZE*LEN, 4*4*8*DIM])
+    new_output_shape=OUTPUT_SHAPE[-1]/(2**4)
+    output = tf.reshape(output, [BATCH_SIZE*LEN, new_output_shape*8*DIM])
 
     output = tf.concat([output, labels], axis=1)
 
-    output = lib.ops.linear.Linear('Extractor.Output', 4*4*8*DIM+N_C, DIM_LATENT_L, output)
+    output = lib.ops.linear.Linear('Extractor.Output', new_output_shape*8*DIM+N_C, DIM_LATENT_L, output)
 
     return tf.reshape(output, [BATCH_SIZE, LEN, DIM_LATENT_L])
 
 def G_Extractor(inputs, labels):
-    output = tf.reshape(inputs, [BATCH_SIZE, LEN, 64, 64])
+    output = tf.reshape(inputs, [BATCH_SIZE, LEN,]+ [OUTPUT_SHAPE[-1]])
 
-    output = lib.ops.conv2d.Conv2D('Extractor.G.1', LEN, DIM, 5, output, stride=2)
+    output = lib.ops.conv1d.Conv1D('Extractor.G.1', LEN, DIM, 5, output, stride=2)
     output = LeakyReLU(output)
 
-    output = lib.ops.conv2d.Conv2D('Extractor.G.2', DIM, 2*DIM, 5, output, stride=2)
+    output = lib.ops.conv1d.Conv1D('Extractor.G.2', DIM, 2*DIM, 5, output, stride=2)
     if BN_FLAG_E:
-        output = lib.ops.batchnorm.Batchnorm('Extractor.G.BN2', [0,2,3], output)
+        output = lib.ops.batchnorm.Batchnorm('Extractor.G.BN2', [0,2], output)
     output = LeakyReLU(output)
 
-    output = lib.ops.conv2d.Conv2D('Extractor.G.3', 2*DIM, 4*DIM, 5, output, stride=2)
+    output = lib.ops.conv1d.Conv1D('Extractor.G.3', 2*DIM, 4*DIM, 5, output, stride=2)
     if BN_FLAG_E:
-        output = lib.ops.batchnorm.Batchnorm('Extractor.G.BN3', [0,2,3], output)
+        output = lib.ops.batchnorm.Batchnorm('Extractor.G.BN3', [0,2], output)
     output = LeakyReLU(output)
 
-    output = lib.ops.conv2d.Conv2D('Extractor.G.4', 4*DIM, 8*DIM, 5, output, stride=2)
+    output = lib.ops.conv1d.Conv1D('Extractor.G.4', 4*DIM, 8*DIM, 5, output, stride=2)
     if BN_FLAG_E:
-        output = lib.ops.batchnorm.Batchnorm('Extractor.G.BN4', [0,2,3], output)
+        output = lib.ops.batchnorm.Batchnorm('Extractor.G.BN4', [0,2], output)
     output = LeakyReLU(output)
-
-    output = tf.reshape(output, [BATCH_SIZE, 4*4*8*DIM])
+    new_output_shape=OUTPUT_SHAPE[-1]/(2**4)
+    output = tf.reshape(output, [BATCH_SIZE, new_output_shape*8*DIM])
     output = tf.concat([output, labels], axis=1)
-    output = lib.ops.linear.Linear('Extractor.G.Output', 4*4*8*DIM+N_C, DIM_LATENT_G, output)
+    output = lib.ops.linear.Linear('Extractor.G.Output', new_output_shape*8*DIM+N_C, DIM_LATENT_G, output)
 
     return tf.reshape(output, [BATCH_SIZE, DIM_LATENT_G])
 
@@ -272,29 +272,29 @@ if MODE in ['local_ep', 'local_epce-z']:
         z = tf.concat([z_g, z_l, labels], axis=-1)
         z = tf.reshape(z, [BATCH_SIZE*LEN, DIM_LATENT_G+DIM_LATENT_L+N_C])
 
-        output = lib.ops.conv2d.Conv2D('Discriminator.1', 1, DIM, 5,output, stride=2)
+        output = lib.ops.conv1d.Conv1D('Discriminator.1', 1, DIM, 5,output, stride=2)
         output = LeakyReLU(output)
         output = tf.layers.dropout(output, rate=.2)
 
-        output = lib.ops.conv2d.Conv2D('Discriminator.2', DIM, 2*DIM, 5, output, stride=2)
+        output = lib.ops.conv1d.Conv1D('Discriminator.2', DIM, 2*DIM, 5, output, stride=2)
         if BN_FLAG_D:
-            output = lib.ops.batchnorm.Batchnorm('Discriminator.BN2', [0,2,3], output)
+            output = lib.ops.batchnorm.Batchnorm('Discriminator.BN2', [0,2], output)
         output = LeakyReLU(output)
         output = tf.layers.dropout(output, rate=.2)
 
-        output = lib.ops.conv2d.Conv2D('Discriminator.3', 2*DIM, 4*DIM, 5, output, stride=2)
+        output = lib.ops.conv1d.Conv1D('Discriminator.3', 2*DIM, 4*DIM, 5, output, stride=2)
         if BN_FLAG_D:
-            output = lib.ops.batchnorm.Batchnorm('Discriminator.BN3', [0,2,3], output)
+            output = lib.ops.batchnorm.Batchnorm('Discriminator.BN3', [0,2], output)
         output = LeakyReLU(output)
         output = tf.layers.dropout(output, rate=.2)
 
-        output = lib.ops.conv2d.Conv2D('Discriminator.4', 4*DIM, 8*DIM, 5, output, stride=2)
+        output = lib.ops.conv1d.Conv1D('Discriminator.4', 4*DIM, 8*DIM, 5, output, stride=2)
         if BN_FLAG_D:
-            output = lib.ops.batchnorm.Batchnorm('Discriminator.BN4', [0,2,3], output)
+            output = lib.ops.batchnorm.Batchnorm('Discriminator.BN4', [0,2], output)
         output = LeakyReLU(output)
         output = tf.layers.dropout(output, rate=.2)
-
-        output = tf.reshape(output, [BATCH_SIZE*LEN, 4*4*8*DIM])
+        new_output_shape=OUTPUT_SHAPE[-1]/(2**4)
+        output = tf.reshape(output, [BATCH_SIZE*LEN, new_output_shape*8*DIM])
 
         z_output = lib.ops.linear.Linear('Discriminator.z1', DIM_LATENT_G+DIM_LATENT_L+N_C, 512, z)
         z_output = LeakyReLU(z_output)
@@ -302,7 +302,7 @@ if MODE in ['local_ep', 'local_epce-z']:
 
         labels = tf.reshape(labels, [BATCH_SIZE*LEN, N_C])
         output = tf.concat([output, z_output, labels], 1)
-        output = lib.ops.linear.Linear('Discriminator.zx1', 4*4*8*DIM+512+N_C, 512, output)
+        output = lib.ops.linear.Linear('Discriminator.zx1', new_output_shape*8*DIM+512+N_C, 512, output)
         output = LeakyReLU(output)
         output = tf.layers.dropout(output, rate=.2)
 
@@ -511,24 +511,24 @@ PI = tf.constant(np.asarray([1./N_C,]*N_C, dtype=np.float32))
 prior_y = tf.distributions.Categorical(probs=PI)
 
 real_x_unit = tf.placeholder(tf.float32, shape=[BATCH_SIZE, LEN, OUTPUT_DIM])
-real_x = 2*(real_x_unit-.5)
+real_x = real_x_unit/15000.0
 real_y = tf.placeholder(tf.float32, shape=[BATCH_SIZE, N_C])
 q_z_l_pre = Extractor(real_x, real_y)
 q_z_g = G_Extractor(real_x, real_y)
-q_z_l = DynamicExtractor(q_z_l_pre)
+q_z_l = q_z_l_pre#DynamicExtractor(q_z_l_pre)
 rec_x = Generator(q_z_g, q_z_l, real_y)
 
-p_z_l_0 = tf.random_normal([BATCH_SIZE, DIM_LATENT_L])
-p_z_l = DynamicGenerator(p_z_l_0)
+# p_z_l_0 = tf.random_normal([BATCH_SIZE, DIM_LATENT_L])
+p_z_l = q_z_l#DynamicGenerator(p_z_l_0)
 p_z_g = tf.random_normal([BATCH_SIZE, DIM_LATENT_G])
 p_y = tf.one_hot(indices=prior_y.sample(BATCH_SIZE), depth=N_C)
 fake_x = Generator(p_z_g, p_z_l, p_y)
 
 if MODE in ['local_ep', 'local_epce-z']:
     disc_fake, disc_real = [],[]
-    for i in xrange(LEN-1):
-        disc_fake.append(DynamicDiscrminator(p_z_l[:,i,:], p_z_l[:,i+1,:]))
-        disc_real.append(DynamicDiscrminator(q_z_l[:,i,:], q_z_l[:,i+1,:]))
+    # for i in xrange(LEN-1):
+    #     disc_fake.append(DynamicDiscrminator(p_z_l[:,i,:], p_z_l[:,i+1,:]))
+    #     disc_real.append(DynamicDiscrminator(q_z_l[:,i,:], q_z_l[:,i+1,:]))
     disc_fake.append(ZGDiscrminator(p_z_g))
     disc_real.append(ZGDiscrminator(q_z_g))
     disc_fake.append(Discriminator(fake_x, p_z_g, p_z_l, p_y))
@@ -544,7 +544,15 @@ disc_params = lib.params_with_name('Discriminator')
 
 if MODE == 'local_ep':
     rec_penalty = None
-    gen_cost, disc_cost, _, _, gen_train_op, disc_train_op = lib.objs.gan_inference.weighted_local_epce(disc_fake, disc_real, ratio, gen_params+ext_params, disc_params, lr=LR, beta1=BETA1, rec_penalty=rec_penalty)
+    gen_cost, disc_cost, _, _, gen_train_op, disc_train_op = \
+    lib.objs.gan_inference.weighted_local_epce(disc_fake, 
+        disc_real, 
+        ratio,
+        gen_params+ext_params, 
+        disc_params, 
+        lr=LR, 
+        beta1=BETA1, 
+        rec_penalty=rec_penalty)
 
 elif MODE == 'local_epce-z':
     rec_penalty = LAMBDA*lib.utils.distance.distance(real_x, rec_x, 'l2')
@@ -559,47 +567,47 @@ elif MODE == 'alice-z':
     gen_cost, disc_cost, gen_train_op, disc_train_op = lib.objs.gan_inference.alice(disc_fake, disc_real, rec_penalty, gen_params+ext_params, disc_params, lr=LR, beta1=BETA1)
 
 # Dataset iterator
-train_gen, dev_gen = lib.simple_moving_mnist.load_video(LEN,BATCH_SIZE)
+train_gen, dev_gen = lib.simple_phone.load_audio(OUTPUT_DIM[-1],LEN,BATCH_SIZE)
 def inf_train_gen():
     while True:
-        for images, labels in train_gen():
-            yield images, binarize_labels(labels)
+        for audios, labels in train_gen():
+            yield audios, binarize_labels(labels)
 
 # For visualization
-def vis(x, iteration, num, name):
-    lib.save_images.save_images(
-        x.reshape((-1,) + tuple(OUTPUT_SHAPE)), 
-        os.path.join(outf, name+'_'+str(iteration)+'.png'), 
-        size = (num, LEN)
-    )
-    x = x.reshape((num, LEN, 1, 64, 64))
-    lib.save_images.save_gifs(x, os.path.join(outf, name+'_'+str(iteration)+'.gif'), size=None)
+def wav(x, iteration, num, name):
+    x = x.reshape((num, LEN*1*10000))
+    import os
+    dir=os.path.join(outf, name+'_'+str(iteration)+'/')
+    if not os.path.isdir(dir):
+        os.mkdir(dir)
+
+    lib.save_wavs.save_wavs(x, dir, size=None)
 
 # For generation
 pre_fixed_noise = tf.constant(np.random.normal(size=(N_VIS, DIM_LATENT_L)).astype('float32'))
 fixed_y = tf.constant(np.tile(np.eye(N_C, dtype=int), (N_VIS/N_C, 1)).astype(np.float32))
 fixed_noise_g = tf.constant(np.random.normal(size=(N_VIS, DIM_LATENT_G)).astype('float32'))
-fixed_noise_l = DynamicGenerator(pre_fixed_noise)
+fixed_noise_l = q_z_l#DynamicGenerator(pre_fixed_noise)
 fixed_noise_samples = Generator(fixed_noise_g, fixed_noise_l, fixed_y)
 def generate_video(iteration, data):
     samples = session.run(fixed_noise_samples)
-    samples = (samples+1.)*2.
-    vis(samples, iteration, N_VIS, 'samples')
-    vis(data, iteration, BATCH_SIZE, 'train_data')
+    samples = samples*15000.0
+    wav(samples, iteration, N_VIS, 'samples')
+    wav(data, iteration, BATCH_SIZE, 'train_data')
 
 # For reconstruction
 fixed_data, fixed_y = dev_gen().next()
 fixed_y = binarize_labels(fixed_y)
 def reconstruct_video(iteration):
     rec_samples = session.run(rec_x, feed_dict={real_x_unit: fixed_data, real_y:fixed_y})
-    rec_samples = (rec_samples+1.)/2.
+    rec_samples = rec_samples*15000.0
     rec_samples = rec_samples.reshape((-1, LEN, OUTPUT_DIM))
     tmp_list = []
     for i in xrange(BATCH_SIZE):
         tmp_list.append(fixed_data[i])
         tmp_list.append(rec_samples[i])
     rec_samples = np.vstack(tmp_list)
-    vis(rec_samples, iteration, BATCH_SIZE*2, 'reconstruction')
+    wav(rec_samples, iteration, BATCH_SIZE*2, 'reconstruction')
 
 # disentangle
 fixed_data, fixed_y = dev_gen().next()
@@ -609,7 +617,7 @@ dis_g = tf.constant(np.tile(np.random.normal(size=(1, DIM_LATENT_G)).astype('flo
 dis_x = Generator(dis_g, q_z_l, dis_y)
 def disentangle(iteration):
     samples = session.run(dis_x, feed_dict={real_x_unit: fixed_data, real_y:fixed_y})
-    samples = (samples+1.)*2.
+    samples = samples*15000.0
     tmp_list = []
     for i in xrange(BATCH_SIZE):
         tmp_list.append(fixed_data[i])

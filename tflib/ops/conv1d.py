@@ -96,13 +96,13 @@ def Conv1D(name, input_dim, output_dim, filter_size, inputs, he_init=True, mask_
         if biases:
             _biases = lib.param(
                 name+'.Biases',
-                np.zeros(output_dim, dtype='float32')
+                np.zeros([output_dim], dtype='float32')
             )
 
             # result = result + _biases
 
-            # result = tf.expand_dims(result, 3)
-            result = tf.nn.bias_add(result, _biases, data_format='NCW')
-            # result = tf.squeeze(result)
+            result = tf.expand_dims(result, 3)
+            result = tf.nn.bias_add(result, _biases, data_format='NCHW')
+            result = tf.squeeze(result)
 
         return result

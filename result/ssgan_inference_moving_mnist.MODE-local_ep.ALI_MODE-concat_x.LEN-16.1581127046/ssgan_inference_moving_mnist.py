@@ -25,7 +25,7 @@ hyperparameters
 '''
 # model type
 MODE = 'local_ep' # local_ep, local_epce-z, ali, alice-z
-POS_MODE = 'inverse' # gsp, naive_mean_field, inverse
+POS_MODE = 'naive_mean_field' # gsp, naive_mean_field, inverse
 ALI_MODE = 'concat_x' # concat_x, concat_z, 3dcnn
 OP_DYN_MODE = 'res' # res, res_w
 BN_FLAG = False
