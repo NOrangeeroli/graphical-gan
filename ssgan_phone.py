@@ -24,7 +24,7 @@ import tflib.utils.distance
 hyperparameters
 '''
 # model type
-MODE = 'local_ep' # local_ep, local_epce-z, ali, alice-z
+MODE = 'local_epce-z' # local_ep, local_epce-z, ali, alice-z
 POS_MODE = 'naive_mean_field' # gsp, naive_mean_field, inverse
 ALI_MODE = 'concat_x' # concat_x, concat_z, 3dcnn
 OP_DYN_MODE = 'res' # res, res_w
@@ -595,8 +595,9 @@ def generate_video(iteration, data):
 
     samples = session.run(fixed_noise_samples, feed_dict={real_x_unit: fixed_data, real_y:fixed_y})
     samples = samples*15000.0
-    wav(samples, iteration, N_VIS, 'samples')
-    wav(data, iteration, BATCH_SIZE, 'train_data')
+    samples = samples[:int(N_VIS/4)]
+    wav(samples, iteration, N_VIS/4, 'samples')
+    # wav(data, iteration, BATCH_SIZE/4, 'train_data')
 
 # For reconstruction
 fixed_data, fixed_y = dev_gen().next()
@@ -606,11 +607,11 @@ def reconstruct_video(iteration):
     rec_samples = rec_samples*15000.0
     rec_samples = rec_samples.reshape((-1, LEN, OUTPUT_DIM))
     tmp_list = []
-    for i in xrange(BATCH_SIZE):
+    for i in xrange(BATCH_SIZE/4):
         tmp_list.append(fixed_data[i])
         tmp_list.append(rec_samples[i])
     rec_samples = np.vstack(tmp_list)
-    wav(rec_samples, iteration, BATCH_SIZE*2, 'reconstruction')
+    wav(rec_samples, iteration, BATCH_SIZE/2, 'reconstruction')
 
 # disentangle
 fixed_data, fixed_y = dev_gen().next()
@@ -623,11 +624,11 @@ def disentangle(iteration):
     samples = session.run(dis_x, feed_dict={real_x_unit: fixed_data, real_y:fixed_y})
     samples = samples*15000.0
     tmp_list = []
-    for i in xrange(BATCH_SIZE):
+    for i in xrange(BATCH_SIZE/4):
         tmp_list.append(fixed_data[i])
         tmp_list.append(samples[i])
     samples = np.vstack(tmp_list)
-    wav(samples, iteration, BATCH_SIZE*2, 'disentangle')
+    wav(samples, iteration, BATCH_SIZE/2, 'disentangle')
 
 
 '''
