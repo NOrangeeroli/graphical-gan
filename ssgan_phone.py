@@ -39,8 +39,8 @@ DIM_LATENT_T = DIM_LATENT_L # transformation latent variable
 DIM = 32 # model size of frame generator
 DIM_OP = 256 # model size of the dynamic operator
 # data
-LEN = 10 # data length
-OUTPUT_SHAPE = [1,8192] # data shape
+LEN = 20 # data length
+OUTPUT_SHAPE = [1,4096] # data shape
 OUTPUT_DIM = np.prod(OUTPUT_SHAPE) # data dim
 N_C = 12 # number of classes
 # optimization
