@@ -178,7 +178,7 @@ def Generator(z_g, z_l, labels):
 
     z = tf.reshape(z, [BATCH_SIZE*LEN, DIM_LATENT_G+DIM_LATENT_L+N_C])
 
-    output = lib.ops.linear.Linear('Generator.Input', DIM_LATENT_G+DIM_LATENT_L+N_C, 512*8*DIM, z)
+    output = lib.ops.linear.Linear('Generator.Input', DIM_LATENT_G+DIM_LATENT_L+N_C, OUTPUT_DIM/(2**4)*8*DIM, z)
     if BN_FLAG_G:
         output = lib.ops.batchnorm.Batchnorm('Generator.BN1', [0], output)
     output = tf.nn.relu(output)
