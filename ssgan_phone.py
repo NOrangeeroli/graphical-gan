@@ -578,15 +578,11 @@ classl_params = lib.params_with_name('Classifier.L')
 local_classifier_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
     labels=l_Classifier(q_z_l),
     logits=real_y,
-    axis=-1,
-    name=None
 ))
 
 global_classifier_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
     labels=g_Classifier(q_z_g),
     logits=real_y,
-    axis=-1,
-    name=None
 ))
 
 
