@@ -208,9 +208,10 @@ def Generator(z_g, z_l, labels):
     return tf.reshape(output, [BATCH_SIZE, LEN, OUTPUT_DIM])
 
 def Extractor(inputs, labels):
+    new_output_shape=OUTPUT_SHAPE[-1]/(2**4)
     output = tf.reshape(inputs, [BATCH_SIZE,1,OUTPUT_DIM*LEN] )
-    labels = expand_labels(labels)
-
+    labels = expand_labels(labels,l=new_output_shape*LEN)
+    labels = tf.reshape(labels, [BATCH_SIZE*LEN*new_output_shape,N_C])
     output = lib.ops.conv1d.Conv1D('Extractor.1', 1, DIM, 5, output, stride=2)
     output = LeakyReLU(output)
 
