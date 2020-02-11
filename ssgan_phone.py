@@ -282,7 +282,7 @@ def l_Classifier(z_l):
     output = lib.ops.conv1d.Conv1D('Classifier.L.1', LEN*DIM_LATENT_L, DIM, 5, output, stride=2)
     output = LeakyReLU(output)
     output = tf.reshape(output, [BATCH_SIZE, new_output_shape/2*DIM])
-    output = lib.ops.linear.Linear('Classifier.L.Output', new_output_shape*2*DIM, N_C, output)
+    output = lib.ops.linear.Linear('Classifier.L.Output', new_output_shape/2*DIM, N_C, output)
     return output
 
 
