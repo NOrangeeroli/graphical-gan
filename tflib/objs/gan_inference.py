@@ -304,9 +304,20 @@ def local_ep_dynamic(disc_fake_zz, disc_real_zz, disc_fake_xz, disc_real_xz, gen
     return gen_cost, disc_cost, gen_train_op, disc_train_op
 
 
-def weighted_local_epce(disc_fake_list, disc_real_list, ratio_list, gen_params, disc_params, lr=2e-4, beta1=0.5, rec_penalty = None):
+def weighted_local_epce(disc_fake_list, 
+    disc_real_list,
+    local_classifier_loss,
+    global_classifier_loss,
+    lc_params,
+    lg_params,
+    ratio_list, 
+    gen_params, 
+    disc_params,
+
+    lr=2e-4, beta1=0.5, rec_penalty = None):
     gen_cost = 0
     disc_cost = 0
+
     assert len(disc_fake_list) == ratio_list.shape[0]
     gen_debug_list, disc_debug_list = [],[]
     for disc_fake, disc_real, ratio in zip(disc_fake_list, disc_real_list, ratio_list):
@@ -354,5 +365,17 @@ def weighted_local_epce(disc_fake_list, disc_real_list, ratio_list, gen_params, 
         learning_rate=lr, 
         beta1=beta1
     ).minimize(disc_cost, var_list=disc_params)
+    cl_train_op = tf.train.AdamOptimizer(
+        learning_rate=lr, 
+        beta1=beta1
+    ).minimize(local_classifier_loss, var_list=lc_params)
+    cg_train_op = tf.train.AdamOptimizer(
+        learning_rate=lr, 
+        beta1=beta1
+    ).minimize(global_classifier_loss, var_list=gc_params)
 
-    return gen_cost, disc_cost, gen_debug_list, disc_debug_list, gen_train_op, disc_train_op
+
+    return gen_cost, disc_cost , local_classifier_loss, global_classifier_loss, gen_debug_list, disc_debug_list, gen_train_op, disc_train_op, cl_train_op, cg_train_op
+
+
+
