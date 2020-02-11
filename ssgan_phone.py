@@ -528,6 +528,10 @@ p_z_g = tf.random_normal([BATCH_SIZE, DIM_LATENT_G])
 p_y = tf.one_hot(indices=prior_y.sample(BATCH_SIZE), depth=N_C)
 fake_x = Generator(p_z_g, p_z_l, p_y)
 
+
+
+
+
 if MODE in ['local_ep', 'local_epce-z']:
     disc_fake, disc_real = [],[]
     # for i in xrange(LEN-1):
@@ -559,7 +563,7 @@ if MODE == 'local_ep':
         rec_penalty=rec_penalty)
 
 elif MODE == 'local_epce-z':
-    rec_penalty = LAMBDA*lib.utils.distance.distance(real_x, rec_x, 'l2')
+    rec_penalty = 15000.0*15000.0*LAMBDA*lib.utils.distance.distance(real_x, rec_x, 'l2')
     gen_cost, disc_cost, _, _, gen_train_op, disc_train_op = \
     lib.objs.gan_inference.weighted_local_epce(disc_fake, 
         disc_real, 
