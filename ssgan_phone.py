@@ -76,6 +76,8 @@ shutil.copy(os.path.realpath(__file__), os.path.join(outf, filename_script))
 lib.print_model_settings_to_file(locals().copy(), logfile)
 
 ratio = [1, LEN]
+ratio = [1]
+
 ratio = np.asarray(ratio) * 1.0 / (len(ratio))
 
 
@@ -88,8 +90,8 @@ def binarize_labels(y):
         new_y[i, y[i]] = 1
     return new_y.astype(np.float32)
 
-def expand_labels(y):
-    new_y = tf.tile(tf.expand_dims(y, axis=1), [1, LEN, 1])
+def expand_labels(y,l=LEN):
+    new_y = tf.tile(tf.expand_dims(y, axis=1), [1, l, 1])
     return tf.reshape(new_y, [-1, N_C])
 
 def LeakyReLU(x, alpha=0.2):
@@ -168,21 +170,22 @@ def DynamicExtractor(z_l_pre):
     return tf.reshape(tf.concat(z_list, axis=1), [BATCH_SIZE, LEN, DIM_LATENT_L])
 
 def Generator(z_g, z_l, labels):
+    new_output_shape=OUTPUT_SHAPE[-1]/(2**4)
     z_g = tf.reshape(z_g, [BATCH_SIZE, DIM_LATENT_G])
-    z_g = tf.tile(tf.expand_dims(z_g, axis=1), [1, LEN, 1])
+    z_g = tf.tile(tf.expand_dims(z_g, axis=1), [1, new_output_shape*LEN, 1])
     
-    z_l = tf.reshape(z_l, [BATCH_SIZE, LEN, DIM_LATENT_L])
-    labels = expand_labels(labels)
-    labels = tf.reshape(labels, [BATCH_SIZE, LEN, N_C])
+    z_l = tf.reshape(z_l, [BATCH_SIZE, new_output_shape*LEN, DIM_LATENT_L])
+    labels = expand_labels(labels,l=new_output_shape*LEN)
+    labels = tf.reshape(labels, [BATCH_SIZE, LEN*new_output_shape, N_C])
     z = tf.concat([z_g, z_l, labels], axis=-1)
 
-    z = tf.reshape(z, [BATCH_SIZE*LEN, DIM_LATENT_G+DIM_LATENT_L+N_C])
+    z = tf.reshape(z, [BATCH_SIZE*LEN*new_output_shape, DIM_LATENT_G+DIM_LATENT_L+N_C])
 
-    output = lib.ops.linear.Linear('Generator.Input', DIM_LATENT_G+DIM_LATENT_L+N_C, OUTPUT_DIM/(2**4)*8*DIM, z)
+    output = lib.ops.linear.Linear('Generator.Input', DIM_LATENT_G+DIM_LATENT_L+N_C, 8*DIM, z)
     if BN_FLAG_G:
         output = lib.ops.batchnorm.Batchnorm('Generator.BN1', [0], output)
     output = tf.nn.relu(output)
-    output = tf.reshape(output, [BATCH_SIZE*LEN, 8*DIM, -1])
+    output = tf.reshape(output, [BATCH_SIZE, 8*DIM, new_output_shape*LEN])
 
     output = lib.ops.deconv1d.Deconv1D('Generator.2', 8*DIM, 4*DIM, 5, output)
     if BN_FLAG_G:
@@ -205,7 +208,7 @@ def Generator(z_g, z_l, labels):
     return tf.reshape(output, [BATCH_SIZE, LEN, OUTPUT_DIM])
 
 def Extractor(inputs, labels):
-    output = tf.reshape(inputs, [BATCH_SIZE*LEN,] + OUTPUT_SHAPE)
+    output = tf.reshape(inputs, [BATCH_SIZE,OUTPUT_DIM*LEN] )
     labels = expand_labels(labels)
 
     output = lib.ops.conv1d.Conv1D('Extractor.1', 1, DIM, 5, output, stride=2)
@@ -226,13 +229,13 @@ def Extractor(inputs, labels):
         output = lib.ops.batchnorm.Batchnorm('Extractor.BN4', [0,2], output)
     output = LeakyReLU(output)
     new_output_shape=OUTPUT_SHAPE[-1]/(2**4)
-    output = tf.reshape(output, [BATCH_SIZE*LEN, new_output_shape*8*DIM])
+    output = tf.reshape(output, [BATCH_SIZE*LEN*new_output_shape, 8*DIM])
 
     output = tf.concat([output, labels], axis=1)
 
-    output = lib.ops.linear.Linear('Extractor.Output', new_output_shape*8*DIM+N_C, DIM_LATENT_L, output)
+    output = lib.ops.linear.Linear('Extractor.Output', 8*DIM+N_C, DIM_LATENT_L, output)
 
-    return tf.reshape(output, [BATCH_SIZE, LEN, DIM_LATENT_L])
+    return tf.reshape(output, [BATCH_SIZE, LEN*new_output_shape, DIM_LATENT_L])
 
 def G_Extractor(inputs, labels):
     output = tf.reshape(inputs, [BATCH_SIZE, LEN,]+ [OUTPUT_SHAPE[-1]])
@@ -531,8 +534,8 @@ if MODE in ['local_ep', 'local_epce-z']:
     #     disc_real.append(DynamicDiscrminator(q_z_l[:,i,:], q_z_l[:,i+1,:]))
     disc_fake.append(ZGDiscrminator(p_z_g))
     disc_real.append(ZGDiscrminator(q_z_g))
-    disc_fake.append(Discriminator(fake_x, p_z_g, p_z_l, p_y))
-    disc_real.append(Discriminator(real_x, q_z_g, q_z_l, real_y))
+    # disc_fake.append(Discriminator(fake_x, p_z_g, p_z_l, p_y))
+    # disc_real.append(Discriminator(real_x, q_z_g, q_z_l, real_y))
 
 elif MODE in ['ali', 'alice-z']:
     disc_real = Discriminator(real_x, q_z_g, q_z_l, real_y)
@@ -556,7 +559,15 @@ if MODE == 'local_ep':
 
 elif MODE == 'local_epce-z':
     rec_penalty = LAMBDA*lib.utils.distance.distance(real_x, rec_x, 'l2')
-    gen_cost, disc_cost, _, _, gen_train_op, disc_train_op = lib.objs.gan_inference.weighted_local_epce(disc_fake, disc_real, ratio, gen_params+ext_params, disc_params, lr=LR, beta1=BETA1, rec_penalty=rec_penalty)
+    gen_cost, disc_cost, _, _, gen_train_op, disc_train_op = \
+    lib.objs.gan_inference.weighted_local_epce(disc_fake, 
+        disc_real, 
+        ratio, 
+        gen_params+ext_params, 
+        disc_params, 
+        lr=LR, 
+        beta1=BETA1, 
+        rec_penalty=rec_penalty)
 
 elif MODE == 'ali':
     rec_penalty = None
