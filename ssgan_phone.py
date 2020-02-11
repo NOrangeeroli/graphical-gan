@@ -208,7 +208,7 @@ def Generator(z_g, z_l, labels):
     return tf.reshape(output, [BATCH_SIZE, LEN, OUTPUT_DIM])
 
 def Extractor(inputs, labels):
-    output = tf.reshape(inputs, [BATCH_SIZE,OUTPUT_DIM*LEN] )
+    output = tf.reshape(inputs, [BATCH_SIZE,1,OUTPUT_DIM*LEN] )
     labels = expand_labels(labels)
 
     output = lib.ops.conv1d.Conv1D('Extractor.1', 1, DIM, 5, output, stride=2)
