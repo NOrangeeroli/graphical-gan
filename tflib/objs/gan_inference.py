@@ -358,7 +358,7 @@ def weighted_local_epce(disc_fake_list,
     gen_cost += global_classifier_loss
     from math import sqrt
     #gen_cost += tf.math.abs((local_classifier_loss-2.484906649788))
-    gen_cost += tf.nn.relu(1.0/(local_classifier_loss)-1/2.5)
+    gen_cost += tf.nn.relu(1.0/(local_classifier_loss)-1/2.48)+ tf.nn.relu(tf.math.exp(local_classifier_loss)-tf.math.exp(2.48))
     gen_train_op = tf.train.AdamOptimizer(
         learning_rate=lr, 
         beta1=beta1

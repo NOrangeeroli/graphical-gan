@@ -44,8 +44,8 @@ OUTPUT_SHAPE = [1,512] # data shape
 OUTPUT_DIM = np.prod(OUTPUT_SHAPE) # data dim
 N_C = 12 # number of classes
 # optimization
-LAMBDA = 0.1 # reconstruction
-LR = 1e-4 # learning rate
+LAMBDA = 0.3 # reconstruction
+LR = 1e-2 # learning rate
 BATCH_SIZE = 48 # batch size
 BETA1 = .5 # adam
 BETA2 = .999 # adam
@@ -242,9 +242,9 @@ def Extractor(inputs, labels):
     return tf.reshape(output, [BATCH_SIZE, LEN*new_output_shape, DIM_LATENT_L])
 
 def G_Extractor(inputs, labels):
-    output = tf.reshape(inputs, [BATCH_SIZE, LEN,]+ [OUTPUT_SHAPE[-1]])
+    output = tf.reshape(inputs, [BATCH_SIZE, LEN,]+ [ LEN*OUTPUT_SHAPE[-1]])
 
-    output = lib.ops.conv1d.Conv1D('Extractor.G.1', LEN, DIM, 5, output, stride=2)
+    output = lib.ops.conv1d.Conv1D('Extractor.G.1', 1, DIM, 5, output, stride=2)
     output = LeakyReLU(output)
 
     output = lib.ops.conv1d.Conv1D('Extractor.G.2', DIM, 2*DIM, 5, output, stride=2)
@@ -278,11 +278,13 @@ def g_Classifier(z_g):
 
 def l_Classifier(z_l):
     new_output_shape=OUTPUT_SHAPE[-1]/(2**4)
-    output=tf.reshape(z_l, [BATCH_SIZE, LEN*DIM_LATENT_L, new_output_shape])
-    output = lib.ops.conv1d.Conv1D('Classifier.L.1', LEN*DIM_LATENT_L, DIM, 5, output, stride=2)
+    output=tf.reshape(z_l, [BATCH_SIZE, DIM_LATENT_L, LEN*new_output_shape])
+    output = lib.ops.conv1d.Conv1D('Classifier.L.1', DIM_LATENT_L, DIM, 5, output, stride=4)
     output = LeakyReLU(output)
-    output = tf.reshape(output, [BATCH_SIZE, new_output_shape/2*DIM])
-    output = lib.ops.linear.Linear('Classifier.L.Output', new_output_shape/2*DIM, N_C, output)
+    output = lib.ops.conv1d.Conv1D('Classifier.L.1', DIM, 2*DIM, 5, output, stride=4)
+    output = LeakyReLU(output)
+    output = tf.reshape(output, [BATCH_SIZE, LEN*new_output_shape/4/4*DIM*2])
+    output = lib.ops.linear.Linear('Classifier.L.Output', LEN*new_output_shape/4/4*DIM*2, N_C, output)
     return output
 
 
@@ -652,40 +654,51 @@ def generate_video(iteration, data):
 
     samples = session.run(fixed_noise_samples, feed_dict={real_x_unit: fixed_data, real_y:fixed_y})
     samples = samples*15000.0
-    samples = samples[:int(N_VIS/4)]
-    wav(samples, iteration, N_VIS/4, 'samples')
+    samples = samples[:4]
+    wav(samples, iteration, 4, 'samples')
     # wav(data, iteration, BATCH_SIZE/4, 'train_data')
 
 # For reconstruction
 fixed_data, fixed_y = dev_gen().next()
+
 fixed_y = binarize_labels(fixed_y)
+
+
 def reconstruct_video(iteration):
     rec_samples = session.run(rec_x, feed_dict={real_x_unit: fixed_data, real_y:fixed_y})
     rec_samples = rec_samples*15000.0
     rec_samples = rec_samples.reshape((-1, LEN, OUTPUT_DIM))
     tmp_list = []
-    for i in xrange(BATCH_SIZE/4):
+    for i in xrange(4):
         tmp_list.append(fixed_data[i])
         tmp_list.append(rec_samples[i])
     rec_samples = np.vstack(tmp_list)
-    wav(rec_samples, iteration, BATCH_SIZE/2, 'reconstruction')
+    wav(rec_samples, iteration, 4*2, 'reconstruction')
 
 # disentangle
-fixed_data, fixed_y = dev_gen().next()
-fixed_y = binarize_labels(fixed_y)
-print fixed_y
-dis_y = tf.constant(binarize_labels(np.ones(BATCH_SIZE, dtype=int)))
-dis_g = tf.constant(np.tile(np.random.normal(size=(1, DIM_LATENT_G)).astype('float32'), [BATCH_SIZE, 1]))
-dis_x = Generator(dis_g, q_z_l, dis_y)
+source_data, source_y = dev_gen().next()
+source_y = binarize_labels(source_y)
+target_data, target_y = dev_gen().next()
+target_y = binarize_labels(target_y)
+
+# print fixed_y
+# dis_y = tf.constant(binarize_labels(np.ones(BATCH_SIZE, dtype=int)))
+# dis_g = tf.constant(np.tile(np.random.normal(size=(1, DIM_LATENT_G)).astype('float32'), [BATCH_SIZE, 1]))
+# dis_x = Generator(dis_g, q_z_l, dis_y)
+
 def disentangle(iteration):
-    samples = session.run(dis_x, feed_dict={real_x_unit: fixed_data, real_y:fixed_y})
+    source_z_g = session.run(q_z_g, feed_dict={real_x_unit: source_data, real_y:source_y})
+    source_z_l = session.run(q_z_l, feed_dict={real_x_unit: source_data, real_y:source_y})
+    target_z_g = session.run(q_z_g, feed_dict={real_x_unit: target_data, real_y:target_y})
+    samples= Generator(target_z_g, source_z_l, target_y)
     samples = samples*15000.0
     tmp_list = []
-    for i in xrange(BATCH_SIZE/4):
-        tmp_list.append(fixed_data[i])
+    for i in xrange(4):
+        tmp_list.append(source_data[i])
+        tmp_list.append(target_data[i])
         tmp_list.append(samples[i])
     samples = np.vstack(tmp_list)
-    wav(samples, iteration, BATCH_SIZE/2, 'disentangle')
+    wav(samples, iteration, 4*3, 'disentangle')
 
 
 '''
@@ -705,8 +718,10 @@ with tf.Session() as session:
     gen_num = tf.reduce_sum([tf.reduce_prod(tf.shape(t)) for t in gen_params])
     ext_num = tf.reduce_sum([tf.reduce_prod(tf.shape(t)) for t in ext_params])
     disc_num = tf.reduce_sum([tf.reduce_prod(tf.shape(t)) for t in disc_params])
+    c_num = tf.reduce_sum([tf.reduce_prod(tf.shape(t)) for t in classl_params+classg_params])
+    # disc_num = tf.reduce_sum([tf.reduce_prod(tf.shape(t)) for t in disc_params])
 
-    print '\nNumber of parameters in each player', session.run([gen_num, ext_num, disc_num, gen_num+ext_num+disc_num]), '\n'
+    print '\nNumber of parameters in each player', session.run([gen_num, ext_num, disc_num, c_params, gen_num+ext_num+disc_num+c_params]), '\n'
     with open(logfile,'a') as f:
         f.write('\nNumber of parameters in each player' + str(session.run([gen_num, ext_num, disc_num, gen_num+ext_num+disc_num])) + '\n')
 
@@ -724,11 +739,12 @@ with tf.Session() as session:
            
         for i in xrange(CRITIC_ITERS):
             _data, _labels = gen.next()
-            
+            '''
             _disc_cost, _ = session.run(
                 [disc_cost, disc_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels}
             )
+            '''
             
             _cg_cost, _ = session.run(
                 [global_classifier_loss, cg_train_op],
