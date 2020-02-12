@@ -45,7 +45,7 @@ OUTPUT_DIM = np.prod(OUTPUT_SHAPE) # data dim
 N_C = 12 # number of classes
 # optimization
 LAMBDA = 0.3 # reconstruction
-LR = 1e-2 # learning rate
+LR = 1e-4 # learning rate
 BATCH_SIZE = 48 # batch size
 BETA1 = .5 # adam
 BETA2 = .999 # adam
@@ -242,29 +242,29 @@ def Extractor(inputs, labels):
     return tf.reshape(output, [BATCH_SIZE, LEN*new_output_shape, DIM_LATENT_L])
 
 def G_Extractor(inputs, labels):
-    output = tf.reshape(inputs, [BATCH_SIZE, LEN,]+ [ LEN*OUTPUT_SHAPE[-1]])
+    output = tf.reshape(inputs, [BATCH_SIZE]+ [1, LEN*OUTPUT_SHAPE[-1]])
 
-    output = lib.ops.conv1d.Conv1D('Extractor.G.1', 1, DIM, 5, output, stride=2)
+    output = lib.ops.conv1d.Conv1D('Extractor.G.1', 1, DIM, 5, output, stride=4)
     output = LeakyReLU(output)
 
-    output = lib.ops.conv1d.Conv1D('Extractor.G.2', DIM, 2*DIM, 5, output, stride=2)
+    output = lib.ops.conv1d.Conv1D('Extractor.G.2', DIM, 2*DIM, 5, output, stride=4)
     if BN_FLAG_E:
         output = lib.ops.batchnorm.Batchnorm('Extractor.G.BN2', [0,2], output)
     output = LeakyReLU(output)
 
-    output = lib.ops.conv1d.Conv1D('Extractor.G.3', 2*DIM, 4*DIM, 5, output, stride=2)
+    output = lib.ops.conv1d.Conv1D('Extractor.G.3', 2*DIM, 4*DIM, 5, output, stride=4)
     if BN_FLAG_E:
         output = lib.ops.batchnorm.Batchnorm('Extractor.G.BN3', [0,2], output)
     output = LeakyReLU(output)
 
-    output = lib.ops.conv1d.Conv1D('Extractor.G.4', 4*DIM, 8*DIM, 5, output, stride=2)
+    output = lib.ops.conv1d.Conv1D('Extractor.G.4', 4*DIM, 8*DIM, 5, output, stride=4)
     if BN_FLAG_E:
         output = lib.ops.batchnorm.Batchnorm('Extractor.G.BN4', [0,2], output)
     output = LeakyReLU(output)
-    new_output_shape=OUTPUT_SHAPE[-1]/(2**4)
-    output = tf.reshape(output, [BATCH_SIZE, new_output_shape*8*DIM])
+    new_output_shape=OUTPUT_SHAPE[-1]/(4**4)
+    output = tf.reshape(output, [BATCH_SIZE, new_output_shape*LEN*8*DIM])
     # output = tf.concat([output, labels], axis=1)
-    output = lib.ops.linear.Linear('Extractor.G.Output', new_output_shape*8*DIM, DIM_LATENT_G, output)
+    output = lib.ops.linear.Linear('Extractor.G.Output', new_output_shape*8*DIM*LEN, DIM_LATENT_G, output)
 
     return tf.reshape(output, [BATCH_SIZE, DIM_LATENT_G])
 
@@ -277,14 +277,14 @@ def g_Classifier(z_g):
     return tf.reshape(output, [BATCH_SIZE, N_C])
 
 def l_Classifier(z_l):
-    new_output_shape=OUTPUT_SHAPE[-1]/(2**4)
+    new_output_shape=OUTPUT_SHAPE[-1]/(4**2)
     output=tf.reshape(z_l, [BATCH_SIZE, DIM_LATENT_L, LEN*new_output_shape])
     output = lib.ops.conv1d.Conv1D('Classifier.L.1', DIM_LATENT_L, DIM, 5, output, stride=4)
     output = LeakyReLU(output)
-    output = lib.ops.conv1d.Conv1D('Classifier.L.1', DIM, 2*DIM, 5, output, stride=4)
+    output = lib.ops.conv1d.Conv1D('Classifier.L.1', DIM, DIM, 5, output, stride=4)
     output = LeakyReLU(output)
-    output = tf.reshape(output, [BATCH_SIZE, LEN*new_output_shape/4/4*DIM*2])
-    output = lib.ops.linear.Linear('Classifier.L.Output', LEN*new_output_shape/4/4*DIM*2, N_C, output)
+    output = tf.reshape(output, [BATCH_SIZE, LEN*new_output_shape/4/4*DIM])
+    output = lib.ops.linear.Linear('Classifier.L.Output', LEN*new_output_shape/4/4*DIM, N_C, output)
     return output
 
 
@@ -721,7 +721,7 @@ with tf.Session() as session:
     c_num = tf.reduce_sum([tf.reduce_prod(tf.shape(t)) for t in classl_params+classg_params])
     # disc_num = tf.reduce_sum([tf.reduce_prod(tf.shape(t)) for t in disc_params])
 
-    print '\nNumber of parameters in each player', session.run([gen_num, ext_num, disc_num, c_params, gen_num+ext_num+disc_num+c_params]), '\n'
+    print '\nNumber of parameters in each player', session.run([gen_num, ext_num, disc_num, c_num, gen_num+ext_num+disc_num+c_num]), '\n'
     with open(logfile,'a') as f:
         f.write('\nNumber of parameters in each player' + str(session.run([gen_num, ext_num, disc_num, gen_num+ext_num+disc_num])) + '\n')
 
@@ -762,7 +762,7 @@ with tf.Session() as session:
             lib.plot.plot('cl', _cl_cost)
             if rec_penalty is not None:
                 lib.plot.plot('rc', _rec_cost)
-        lib.plot.plot('dc', _disc_cost)
+        #lib.plot.plot('dc', _disc_cost)
         lib.plot.plot('time', time.time() - start_time)
 
         # Write logs
