@@ -573,17 +573,17 @@ gen_params = lib.params_with_name('Generator')
 ext_params = lib.params_with_name('Extractor')
 disc_params = lib.params_with_name('Discriminator')
 local_classifier_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
-    logits=l_Classifier(q_z_l),
-    labels=real_y,
-    name = 'lc'
-),name = 'mlc')
+    labels=l_Classifier(q_z_l),
+    logits=real_y,
+))
 
 global_classifier_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
-    logits=g_Classifier(q_z_g),
-    labels=real_y,
-    name='gc'
-),name='mgc')
-print g_Classifier(q_z_g),real_y
+    labels=g_Classifier(q_z_g),
+    logits=real_y,
+))
+
+print l_Classifier(q_z_l)
+
 classg_params = lib.params_with_name('Classifier.G')
 classl_params = lib.params_with_name('Classifier.L')
 if MODE == 'local_ep':
@@ -607,8 +607,8 @@ elif MODE == 'local_epce-z':
         disc_real,
         local_classifier_loss,
         global_classifier_loss, 
-        classl_params,
         classg_params,
+        classl_params,
         ratio, 
         gen_params+ext_params, 
         disc_params, 
@@ -643,7 +643,6 @@ def wav(x, iteration, num, name):
 
 # For generation
 fixed_data, fixed_y = dev_gen().next()
-print fixed_y 
 fixed_y = binarize_labels(fixed_y)
 pre_fixed_noise = tf.constant(np.random.normal(size=(N_VIS, DIM_LATENT_L)).astype('float32'))
 fixed_y = tf.constant(np.tile(np.eye(N_C, dtype=int), (N_VIS/N_C, 1)).astype(np.float32))
@@ -735,7 +734,7 @@ with tf.Session() as session:
                 feed_dict={real_x_unit: _data, real_y:_labels}
             )
             _cl_cost, _ = session.run(
-                [local_classifier_loss, cl_train_op],
+                [local_classifier_loss, local_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels}
             )
         if iteration > 0:

@@ -607,8 +607,8 @@ elif MODE == 'local_epce-z':
         disc_real,
         local_classifier_loss,
         global_classifier_loss, 
-        classl_params,
         classg_params,
+        classl_params,
         ratio, 
         gen_params+ext_params, 
         disc_params, 
@@ -717,6 +717,7 @@ with tf.Session() as session:
 
         if iteration > 0:
             _data, _labels = gen.next()
+            print _labels
             if rec_penalty is None:
                 _gen_cost, _ = session.run([gen_cost, gen_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels})

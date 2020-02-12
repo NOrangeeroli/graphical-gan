@@ -34,7 +34,7 @@ BN_FLAG_E = BN_FLAG # batch norm in E
 BN_FLAG_D = BN_FLAG # batch norm in D
 # model size
 DIM_LATENT_G = 128 # global latent variable
-DIM_LATENT_L = 32 # local latent variable
+DIM_LATENT_L = 8 # local latent variable
 DIM_LATENT_T = DIM_LATENT_L # transformation latent variable
 DIM = 32 # model size of frame generator
 DIM_OP = 256 # model size of the dynamic operator
@@ -169,9 +169,6 @@ def DynamicExtractor(z_l_pre):
 
     return tf.reshape(tf.concat(z_list, axis=1), [BATCH_SIZE, LEN, DIM_LATENT_L])
 
-
-
-
 def Generator(z_g, z_l, labels):
     new_output_shape=OUTPUT_SHAPE[-1]/(2**4)
     z_g = tf.reshape(z_g, [BATCH_SIZE, DIM_LATENT_G])
@@ -180,11 +177,11 @@ def Generator(z_g, z_l, labels):
     z_l = tf.reshape(z_l, [BATCH_SIZE, new_output_shape*LEN, DIM_LATENT_L])
     labels = expand_labels(labels,l=new_output_shape*LEN)
     labels = tf.reshape(labels, [BATCH_SIZE, LEN*new_output_shape, N_C])
-    z = tf.concat([z_g, z_l], axis=-1)
+    z = tf.concat([z_g, z_l, labels], axis=-1)
 
-    z = tf.reshape(z, [BATCH_SIZE*LEN*new_output_shape, DIM_LATENT_G+DIM_LATENT_L])
+    z = tf.reshape(z, [BATCH_SIZE*LEN*new_output_shape, DIM_LATENT_G+DIM_LATENT_L+N_C])
 
-    output = lib.ops.linear.Linear('Generator.Input', DIM_LATENT_G+DIM_LATENT_L, 8*DIM, z)
+    output = lib.ops.linear.Linear('Generator.Input', DIM_LATENT_G+DIM_LATENT_L+N_C, 8*DIM, z)
     if BN_FLAG_G:
         output = lib.ops.batchnorm.Batchnorm('Generator.BN1', [0], output)
     output = tf.nn.relu(output)
@@ -235,9 +232,9 @@ def Extractor(inputs, labels):
     new_output_shape=OUTPUT_SHAPE[-1]/(2**4)
     output = tf.reshape(output, [BATCH_SIZE*LEN*new_output_shape, 8*DIM])
 
-    # output = tf.concat([output, labels], axis=1)
+    output = tf.concat([output, labels], axis=1)
 
-    output = lib.ops.linear.Linear('Extractor.Output', 8*DIM, DIM_LATENT_L, output)
+    output = lib.ops.linear.Linear('Extractor.Output', 8*DIM+N_C, DIM_LATENT_L, output)
 
     return tf.reshape(output, [BATCH_SIZE, LEN*new_output_shape, DIM_LATENT_L])
 
@@ -263,30 +260,10 @@ def G_Extractor(inputs, labels):
     output = LeakyReLU(output)
     new_output_shape=OUTPUT_SHAPE[-1]/(2**4)
     output = tf.reshape(output, [BATCH_SIZE, new_output_shape*8*DIM])
-    # output = tf.concat([output, labels], axis=1)
-    output = lib.ops.linear.Linear('Extractor.G.Output', new_output_shape*8*DIM, DIM_LATENT_G, output)
+    output = tf.concat([output, labels], axis=1)
+    output = lib.ops.linear.Linear('Extractor.G.Output', new_output_shape*8*DIM+N_C, DIM_LATENT_G, output)
 
     return tf.reshape(output, [BATCH_SIZE, DIM_LATENT_G])
-
-def g_Classifier(z_g):
-    new_output_shape=OUTPUT_SHAPE[-1]/(2**4)
-    output = tf.reshape(z_g, [BATCH_SIZE, DIM_LATENT_G])
-    output = LeakyReLU(output)
-    output = tf.layers.dropout(output, rate=.2)
-    output=lib.ops.linear.Linear('Classifier.G.Output', DIM_LATENT_G, N_C, output)
-    return tf.reshape(output, [BATCH_SIZE, N_C])
-
-def l_Classifier(z_l):
-    new_output_shape=OUTPUT_SHAPE[-1]/(2**4)
-    output=tf.reshape(z_l, [BATCH_SIZE, LEN*DIM_LATENT_L, new_output_shape])
-    output = lib.ops.conv1d.Conv1D('Classifier.L.1', LEN*DIM_LATENT_L, DIM, 5, output, stride=2)
-    output = LeakyReLU(output)
-    output = tf.reshape(output, [BATCH_SIZE, new_output_shape/2*DIM])
-    output = lib.ops.linear.Linear('Classifier.L.Output', new_output_shape/2*DIM, N_C, output)
-    return output
-
-
-
 
 if MODE in ['local_ep', 'local_epce-z']:
     def Discriminator(x, z_g, z_l, labels):
@@ -572,27 +549,12 @@ elif MODE in ['ali', 'alice-z']:
 gen_params = lib.params_with_name('Generator')
 ext_params = lib.params_with_name('Extractor')
 disc_params = lib.params_with_name('Discriminator')
-local_classifier_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
-    logits=l_Classifier(q_z_l),
-    labels=real_y,
-    name = 'lc'
-),name = 'mlc')
 
-global_classifier_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
-    logits=g_Classifier(q_z_g),
-    labels=real_y,
-    name='gc'
-),name='mgc')
-print g_Classifier(q_z_g),real_y
-classg_params = lib.params_with_name('Classifier.G')
-classl_params = lib.params_with_name('Classifier.L')
 if MODE == 'local_ep':
     rec_penalty = None
     gen_cost, disc_cost, _, _, gen_train_op, disc_train_op = \
     lib.objs.gan_inference.weighted_local_epce(disc_fake, 
         disc_real, 
-        local_classifier_loss,
-        global_classifier_loss,
         ratio,
         gen_params+ext_params, 
         disc_params, 
@@ -601,14 +563,10 @@ if MODE == 'local_ep':
         rec_penalty=rec_penalty)
 
 elif MODE == 'local_epce-z':
-    rec_penalty = LAMBDA*lib.utils.distance.distance(real_x, rec_x, 'l2')
-    gen_cost, disc_cost, _, _, gen_train_op, disc_train_op, cl_train_op, cg_train_op = \
+    rec_penalty = 15000.0*15000.0*LAMBDA*lib.utils.distance.distance(real_x, rec_x, 'l2')
+    gen_cost, disc_cost, _, _, gen_train_op, disc_train_op = \
     lib.objs.gan_inference.weighted_local_epce(disc_fake, 
-        disc_real,
-        local_classifier_loss,
-        global_classifier_loss, 
-        classl_params,
-        classg_params,
+        disc_real, 
         ratio, 
         gen_params+ext_params, 
         disc_params, 
@@ -643,7 +601,6 @@ def wav(x, iteration, num, name):
 
 # For generation
 fixed_data, fixed_y = dev_gen().next()
-print fixed_y 
 fixed_y = binarize_labels(fixed_y)
 pre_fixed_noise = tf.constant(np.random.normal(size=(N_VIS, DIM_LATENT_L)).astype('float32'))
 fixed_y = tf.constant(np.tile(np.eye(N_C, dtype=int), (N_VIS/N_C, 1)).astype(np.float32))
@@ -730,18 +687,8 @@ with tf.Session() as session:
                 [disc_cost, disc_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels}
             )
-            _cg_cost, _ = session.run(
-                [global_classifier_loss, cg_train_op],
-                feed_dict={real_x_unit: _data, real_y:_labels}
-            )
-            _cl_cost, _ = session.run(
-                [local_classifier_loss, cl_train_op],
-                feed_dict={real_x_unit: _data, real_y:_labels}
-            )
         if iteration > 0:
             lib.plot.plot('gc', _gen_cost)
-            lib.plot.plot('cg', _cg_cost)
-            lib.plot.plot('cl', _cl_cost)
             if rec_penalty is not None:
                 lib.plot.plot('rc', _rec_cost)
         lib.plot.plot('dc', _disc_cost)

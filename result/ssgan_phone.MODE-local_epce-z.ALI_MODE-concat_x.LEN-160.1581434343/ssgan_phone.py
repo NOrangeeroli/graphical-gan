@@ -717,6 +717,7 @@ with tf.Session() as session:
 
         if iteration > 0:
             _data, _labels = gen.next()
+            print _labels
             if rec_penalty is None:
                 _gen_cost, _ = session.run([gen_cost, gen_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels})
