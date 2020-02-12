@@ -583,6 +583,7 @@ global_classifier_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
     labels=real_y,
     name='gc'
 ),name='mgc')
+print g_Classifier(q_z_g),real_y
 classg_params = lib.params_with_name('Classifier.G')
 classl_params = lib.params_with_name('Classifier.L')
 if MODE == 'local_ep':
@@ -642,6 +643,7 @@ def wav(x, iteration, num, name):
 
 # For generation
 fixed_data, fixed_y = dev_gen().next()
+print fixed_y 
 fixed_y = binarize_labels(fixed_y)
 pre_fixed_noise = tf.constant(np.random.normal(size=(N_VIS, DIM_LATENT_L)).astype('float32'))
 fixed_y = tf.constant(np.tile(np.eye(N_C, dtype=int), (N_VIS/N_C, 1)).astype(np.float32))

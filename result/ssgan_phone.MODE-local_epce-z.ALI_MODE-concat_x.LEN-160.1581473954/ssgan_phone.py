@@ -583,6 +583,7 @@ global_classifier_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
     labels=real_y,
     name='gc'
 ),name='mgc')
+print g_Classifier(q_z_g),real_y
 classg_params = lib.params_with_name('Classifier.G')
 classl_params = lib.params_with_name('Classifier.L')
 if MODE == 'local_ep':
@@ -642,6 +643,7 @@ def wav(x, iteration, num, name):
 
 # For generation
 fixed_data, fixed_y = dev_gen().next()
+print fixed_y 
 fixed_y = binarize_labels(fixed_y)
 pre_fixed_noise = tf.constant(np.random.normal(size=(N_VIS, DIM_LATENT_L)).astype('float32'))
 fixed_y = tf.constant(np.tile(np.eye(N_C, dtype=int), (N_VIS/N_C, 1)).astype(np.float32))
@@ -712,7 +714,7 @@ with tf.Session() as session:
 
     for iteration in xrange(ITERS):
         start_time = time.time()
-        
+
         if iteration > 0:
             _data, _labels = gen.next()
             if rec_penalty is None:
@@ -721,25 +723,21 @@ with tf.Session() as session:
             else:
                 _gen_cost, _rec_cost, _ = session.run([gen_cost, rec_penalty, gen_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels})
-           
+            
         for i in xrange(CRITIC_ITERS):
             _data, _labels = gen.next()
-            
             _disc_cost, _ = session.run(
                 [disc_cost, disc_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels}
             )
-            
             _cg_cost, _ = session.run(
                 [global_classifier_loss, cg_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels}
             )
-            
             _cl_cost, _ = session.run(
                 [local_classifier_loss, cl_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels}
             )
-            
         if iteration > 0:
             lib.plot.plot('gc', _gen_cost)
             lib.plot.plot('cg', _cg_cost)
@@ -750,7 +748,7 @@ with tf.Session() as session:
         lib.plot.plot('time', time.time() - start_time)
 
         # Write logs
-        if (iteration < 100) or (iteration % 100 == 99):
+        if (iteration < 5) or (iteration % 100 == 99):
             lib.plot.flush(outf, logfile)
         lib.plot.tick()
 

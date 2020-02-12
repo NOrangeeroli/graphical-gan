@@ -352,12 +352,13 @@ def weighted_local_epce(disc_fake_list,
             logits=disc_real, 
             labels=tf.ones_like(disc_real)))
         )
-
-
+    gen_cost*=0
     if rec_penalty is not None:
         gen_cost += rec_penalty
     gen_cost += global_classifier_loss
-    gen_cost += (local_classifier_loss-119.275519189824)**2
+    from math import sqrt
+    #gen_cost += tf.math.abs((local_classifier_loss-2.484906649788))
+    gen_cost += tf.nn.relu(1.0/(local_classifier_loss)-1/2.5)
     gen_train_op = tf.train.AdamOptimizer(
         learning_rate=lr, 
         beta1=beta1

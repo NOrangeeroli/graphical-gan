@@ -52,7 +52,7 @@ def Overlap(a, b):
     #return b
 
 def phone_generator_audio(data_all, clip_length, seq_length, batch_size):
-    audios_pre, labels = data_all
+    audios_init, labels_init = data_all
     # images = images.reshape([-1, 28, 28])
     # image_size = 64
     # num_digits = 1
@@ -61,9 +61,13 @@ def phone_generator_audio(data_all, clip_length, seq_length, batch_size):
     
     def get_epoch():
         rng_state = np.random.get_state()
-        np.random.shuffle(audios_pre)
-        np.random.set_state(rng_state)
-        np.random.shuffle(labels)
+        al=list(zip(audios_init,list(labels_init)))
+        np.random.shuffle(al)
+        audios_pre=[x[0] for x in al]
+        labels=[x[1] for x in al]
+        #np.random.shuffle(audios_pre)
+        #np.random.set_state(rng_state)
+        #np.random.shuffle(labels)
         audios=[]
         for a in audios_pre:
             start=np.random.randint(0,len(a))
