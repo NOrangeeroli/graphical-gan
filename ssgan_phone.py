@@ -617,8 +617,9 @@ if MODE in ['local_ep', 'local_epce-z']:
     # for i in xrange(LEN-1):
     #     disc_fake.append(DynamicDiscrminator(p_z_l[:,i,:], p_z_l[:,i+1,:]))
     #     disc_real.append(DynamicDiscrminator(q_z_l[:,i,:], q_z_l[:,i+1,:]))
-    disc_fake.append(ZGDiscrminator(p_z_g))
-    disc_real.append(ZGDiscrminator(q_z_g))
+    pass
+    # disc_fake.append(ZGDiscrminator(p_z_g))
+    # disc_real.append(ZGDiscrminator(q_z_g))
     # disc_fake.append(Discriminator(fake_x, p_z_g, p_z_l, p_y))
     # disc_real.append(Discriminator(real_x, q_z_g, q_z_l, real_y))
 
