@@ -368,10 +368,11 @@ def weighted_local_epce(disc_fake_list,
         learning_rate=lr, 
         beta1=beta1
     ).minimize(disc_cost, var_list=disc_params)'''
-    cl_train_op = tf.train.AdamOptimizer(
+    cl_train_op = None
+    '''tf.train.AdamOptimizer(
         learning_rate=lr, 
         beta1=beta1
-    ).minimize(local_classifier_loss, var_list=cl_params)
+    ).minimize(local_classifier_loss, var_list=cl_params)'''
     cg_train_op = tf.train.AdamOptimizer(
         learning_rate=lr, 
         beta1=beta1

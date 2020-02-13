@@ -46,7 +46,7 @@ N_C = 12 # number of classes
 # optimization
 LAMBDA = 1.0 # reconstruction
 LR = 1e-4 # learning rate
-BATCH_SIZE = 24 # batch size
+BATCH_SIZE = 12 # batch size
 BETA1 = .5 # adam
 BETA2 = .999 # adam
 ITERS = 100000 # number of iterations to train
@@ -631,12 +631,13 @@ elif MODE in ['ali', 'alice-z']:
 gen_params = lib.params_with_name('Generator')
 ext_params = lib.params_with_name('Extractor')
 disc_params = lib.params_with_name('Discriminator')
+'''
 local_classifier_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
     logits=l_Classifier(q_z_l),
     labels=real_y,
     name = 'lc'
 ),name = 'mlc')
-
+'''
 global_classifier_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
     logits=g_Classifier(q_z_g),
     labels=real_y,
@@ -669,7 +670,7 @@ elif MODE == 'local_epce-z':
     gen_cost, disc_cost, _, _, gen_train_op, disc_train_op, cl_train_op, cg_train_op = \
     lib.objs.gan_inference.weighted_local_epce(disc_fake, 
         disc_real,
-        local_classifier_loss,
+        0,
         [global_classifier_loss,global_classifier_loss_2nd], 
         classl_params,
         classg_params,
@@ -727,9 +728,10 @@ fixed_data, fixed_y = dev_gen().next()
 
 fixed_y = binarize_labels(fixed_y)
 
-
+t_data, tt_y =dev_gen().next()
+tt_y = binarize_labels(tt_y)
 def reconstruct_video(iteration):
-    rec_samples = session.run(rec_x, feed_dict={real_x_unit: fixed_data, real_y:fixed_y})
+    rec_samples = session.run(rec_x, feed_dict={real_x_unit: fixed_data, real_y:fixed_y, t_x:t_data,t_y:tt_y})
     rec_samples = rec_samples*15000.0
     rec_samples = rec_samples.reshape((-1, LEN, OUTPUT_DIM))
     tmp_list = []
@@ -797,6 +799,11 @@ with tf.Session() as session:
             np.random.shuffle(al)
             _data=[x[0] for x in al]
             _labels=np.array([x[1] for x in al])
+            _data_t, _labels_t = gen.next()
+            al=list(zip(_data_t,_labels_t))
+            np.random.shuffle(al)
+            _data_t=[x[0] for x in al]
+            _labels_t=np.array([x[1] for x in al])
 
 
             if rec_penalty is None:
@@ -829,17 +836,17 @@ with tf.Session() as session:
                 [global_classifier_loss,global_classifier_loss_2nd, cg_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels,t_x: _data_t,t_y:_labels_t}
             )
-            
+            '''
             _cl_cost, _ = session.run(
                 [local_classifier_loss, cl_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels}
             )
-            
+            '''
         if iteration > 0:
             lib.plot.plot('gc', _gen_cost)
             lib.plot.plot('cg', _cg_cost)
             lib.plot.plot('cg2', _cg_cost2)
-            lib.plot.plot('cl', _cl_cost)
+            #lib.plot.plot('cl', _cl_cost)
             if rec_penalty is not None:
                 lib.plot.plot('rc', _rec_cost)
         #lib.plot.plot('dc', _disc_cost)
