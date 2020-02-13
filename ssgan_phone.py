@@ -175,9 +175,9 @@ def DynamicExtractor(z_l_pre):
 def Generator(z_g, z_l, labels):
     new_output_shape=OUTPUT_SHAPE[-1]/(2**4)
     z_l = tf.reshape(z_l, [BATCH_SIZE, new_output_shape*LEN, DIM_LATENT_L])
-    z_g = tf.reshape(z_g, [BATCH_SIZE, DIM_LATENT_G])
+    
     # z_g = tf.tile(tf.expand_dims(z_g, axis=1), [1, new_output_shape*LEN, 1])
-    z_g = lib.ops.linear.Linear('Extractor.G.Iutput',DIM_LATENT_G, OUTPUT_SHAPE[-1]/(4**4)*8*DIM*LEN, z_g)
+    # z_g = lib.ops.linear.Linear('Extractor.G.Iutput',DIM_LATENT_G, OUTPUT_SHAPE[-1]/(4**4)*8*DIM*LEN, z_g)
     z_g = tf.reshape(z_g, [BATCH_SIZE,8*DIM,LEN*OUTPUT_SHAPE[-1]/(4**4)])
     
 
@@ -312,16 +312,16 @@ def G_Extractor(inputs, labels):
     new_output_shape=OUTPUT_SHAPE[-1]/(4**4)
     output = tf.reshape(output, [BATCH_SIZE, new_output_shape*LEN*8*DIM])
     # output = tf.concat([output, labels], axis=1)
-    output = lib.ops.linear.Linear('Extractor.G.Output', new_output_shape*8*DIM*LEN, DIM_LATENT_G, output)
+    # output = lib.ops.linear.Linear('Extractor.G.Output', new_output_shape*8*DIM*LEN, DIM_LATENT_G, output)
 
-    return tf.reshape(output, [BATCH_SIZE, DIM_LATENT_G])
+    return output#tf.reshape(output, [BATCH_SIZE, DIM_LATENT_G])
 
 def g_Classifier(z_g):
     new_output_shape=OUTPUT_SHAPE[-1]/(2**4)
-    output = tf.reshape(z_g, [BATCH_SIZE, DIM_LATENT_G])
+    output = tf.reshape(z_g, [BATCH_SIZE, OUTPUT_SHAPE[-1]/(4**4)*LEN*8*DIM])
     output = LeakyReLU(output)
     output = tf.layers.dropout(output, rate=.2)
-    output=lib.ops.linear.Linear('Classifier.G.Output', DIM_LATENT_G, N_C, output)
+    output=lib.ops.linear.Linear('Classifier.G.Output', OUTPUT_SHAPE[-1]/(4**4)*LEN*8*DIM, N_C, output)
     return tf.reshape(output, [BATCH_SIZE, N_C])
 
 def l_Classifier(z_l):
