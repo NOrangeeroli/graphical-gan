@@ -800,23 +800,21 @@ with tf.Session() as session:
         
         if iteration > 0:
             _data, _labels = gen.next()
-            al= list(zip(_data,_labels))
-            np.random.shuffle(al)
-            _data=[x[0] for x in al]
-            _labels=np.array([x[1] for x in al])
+            
             _data_t, _labels_t = gen.next()
             al=list(zip(_data_t,_labels_t))
             np.random.shuffle(al)
             _data_t=[x[0] for x in al]
             _labels_t=np.array([x[1] for x in al])
-
+            
+            _data_s, _labels_s = gen.next()
 
             if rec_penalty is None:
                 _gen_cost, _ = session.run([gen_cost, gen_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels,t_x: _data_t,t_y:_labels_t})
             else:
                 _gen_cost, _rec_cost, _ = session.run([gen_cost, rec_penalty, gen_train_op],
-                feed_dict={real_x_unit: _data, real_y:_labels,t_x: _data_t,t_y:_labels_t})
+                feed_dict={real_x_unit: _data, real_y:_labels,t_x: _data_t,t_y:_labels_t,same_x:_data_s,same_y:_labels_s})
            
         for i in xrange(CRITIC_ITERS):
             _data, _labels = gen.next()
