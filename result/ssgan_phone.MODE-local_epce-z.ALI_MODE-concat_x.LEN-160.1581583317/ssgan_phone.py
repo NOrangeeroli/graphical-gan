@@ -76,9 +76,9 @@ shutil.copy(os.path.realpath(__file__), os.path.join(outf, filename_script))
 lib.print_model_settings_to_file(locals().copy(), logfile)
 
 ratio = [1, LEN]
-ratio = []
+ratio = [1]
 
-#ratio = np.asarray(ratio) * 1.0 / (len(ratio))
+ratio = np.asarray(ratio) * 1.0 / (len(ratio))
 
 
 '''

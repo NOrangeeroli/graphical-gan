@@ -318,7 +318,7 @@ def weighted_local_epce(disc_fake_list,
     gen_cost = 0
     disc_cost = 0
 
-    assert len(disc_fake_list) == ratio_list.shape[0]
+    #assert len(disc_fake_list) == ratio_list.shape[0]
     gen_debug_list, disc_debug_list = [],[]
     for disc_fake, disc_real, ratio in zip(disc_fake_list, disc_real_list, ratio_list):
         gen_cost += ratio * tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
@@ -363,10 +363,11 @@ def weighted_local_epce(disc_fake_list,
         learning_rate=lr, 
         beta1=beta1
     ).minimize(gen_cost, var_list=gen_params)
-    disc_train_op = tf.train.AdamOptimizer(
+    disc_train_op = None
+    '''tf.train.AdamOptimizer(
         learning_rate=lr, 
         beta1=beta1
-    ).minimize(disc_cost, var_list=disc_params)
+    ).minimize(disc_cost, var_list=disc_params)'''
     cl_train_op = tf.train.AdamOptimizer(
         learning_rate=lr, 
         beta1=beta1
