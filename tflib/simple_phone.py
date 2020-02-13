@@ -84,7 +84,7 @@ def phone_generator_audio(data_all, clip_length, seq_length, batch_size):
             data_len=len(data)
             for a,l in zip(audios,labels):
                 if i*seq_length*clip_length>=len(a):
-                    continue
+                    break
                 new=a[i*seq_length*clip_length   :  min(len(a),(i+1)*seq_length*clip_length)  ]
                 if len(new)<seq_length*clip_length:
                     new=np.pad(new,(0,seq_length*clip_length-len(new)),'constant')
