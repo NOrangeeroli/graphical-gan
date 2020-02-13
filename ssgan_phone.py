@@ -547,11 +547,18 @@ q_z_g = G_Extractor(real_x, real_y)
 q_z_l = q_z_l_pre#DynamicExtractor(q_z_l_pre)
 rec_x = Generator(q_z_g, q_z_l, real_y)
 
+
+t_x_unit = tf.placeholder(tf.float32, shape=[BATCH_SIZE, LEN, OUTPUT_DIM])
+t_x = t_x_unit/15000.0
+t_y = tf.placeholder(tf.float32, shape=[BATCH_SIZE, N_C])
+
 # p_z_l_0 = tf.random_normal([BATCH_SIZE, DIM_LATENT_L])
 p_z_l = q_z_l#DynamicGenerator(p_z_l_0)
-p_z_g = tf.random_normal([BATCH_SIZE, DIM_LATENT_G])
-p_y = tf.one_hot(indices=prior_y.sample(BATCH_SIZE), depth=N_C)
+p_z_g = G_Extractor(t_x, t_y)
+p_y = t_y
 fake_x = Generator(p_z_g, p_z_l, p_y)
+
+fake_z_g = G_Extractor(fake_x, t_y)
 
 
 
@@ -585,6 +592,12 @@ global_classifier_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
     labels=real_y,
     name='gc'
 ),name='mgc')
+
+global_classifier_loss_2nd = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
+    logits=g_Classifier(fake_z_g),
+    labels=tt_y,
+    name='gc2'
+),name='mgc2')
 classg_params = lib.params_with_name('Classifier.G')
 classl_params = lib.params_with_name('Classifier.L')
 if MODE == 'local_ep':
@@ -607,7 +620,7 @@ elif MODE == 'local_epce-z':
     lib.objs.gan_inference.weighted_local_epce(disc_fake, 
         disc_real,
         local_classifier_loss,
-        global_classifier_loss, 
+        [global_classifier_loss,global_classifier_loss_2nd], 
         classl_params,
         classg_params,
         ratio, 
@@ -685,12 +698,12 @@ target_y = binarize_labels(target_y)
 # dis_y = tf.constant(binarize_labels(np.ones(BATCH_SIZE, dtype=int)))
 # dis_g = tf.constant(np.tile(np.random.normal(size=(1, DIM_LATENT_G)).astype('float32'), [BATCH_SIZE, 1]))
 # dis_x = Generator(dis_g, q_z_l, dis_y)
-
+source_z_l
 def disentangle(iteration):
     source_z_g = session.run(q_z_g, feed_dict={real_x_unit: source_data, real_y:source_y})
     source_z_l = session.run(q_z_l, feed_dict={real_x_unit: source_data, real_y:source_y})
     target_z_g = session.run(q_z_g, feed_dict={real_x_unit: target_data, real_y:target_y})
-    samples= session.run(Generator(target_z_g, source_z_l, target_y))
+    samples= Generator(target_z_g, source_z_l, target_y)
     samples = samples*15000.0
     tmp_list = []
     for i in xrange(4):
@@ -730,12 +743,13 @@ with tf.Session() as session:
         
         if iteration > 0:
             _data, _labels = gen.next()
+            _data_t, _labels_t = gen.next()
             if rec_penalty is None:
                 _gen_cost, _ = session.run([gen_cost, gen_train_op],
-                feed_dict={real_x_unit: _data, real_y:_labels})
+                feed_dict={real_x_unit: _data, real_y:_labels,t_x: _data_t,t_y:_labels_t})
             else:
                 _gen_cost, _rec_cost, _ = session.run([gen_cost, rec_penalty, gen_train_op],
-                feed_dict={real_x_unit: _data, real_y:_labels})
+                feed_dict={real_x_unit: _data, real_y:_labels,t_x: _data_t,t_y:_labels_t})
            
         for i in xrange(CRITIC_ITERS):
             _data, _labels = gen.next()
@@ -746,9 +760,9 @@ with tf.Session() as session:
             )
             '''
             
-            _cg_cost, _ = session.run(
-                [global_classifier_loss, cg_train_op],
-                feed_dict={real_x_unit: _data, real_y:_labels}
+            _cg_cost,_cg_cost2, _ = session.run(
+                [global_classifier_loss,global_classifier_loss_2nd, cg_train_op],
+                feed_dict={real_x_unit: _data, real_y:_labels,t_x: _data_t,t_y:_labels_t}
             )
             
             _cl_cost, _ = session.run(
@@ -759,6 +773,7 @@ with tf.Session() as session:
         if iteration > 0:
             lib.plot.plot('gc', _gen_cost)
             lib.plot.plot('cg', _cg_cost)
+            lib.plot.plot('cg2', _cg_cost2)
             lib.plot.plot('cl', _cl_cost)
             if rec_penalty is not None:
                 lib.plot.plot('rc', _rec_cost)
