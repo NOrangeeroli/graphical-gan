@@ -705,6 +705,7 @@ def wav(x, iteration, num, name):
     lib.save_wavs.save_wavs(x, dir, size=None)
 
 # For generation
+'''
 fixed_data, fixed_y = dev_gen().next()
 fixed_y = binarize_labels(fixed_y)
 pre_fixed_noise = tf.constant(np.random.normal(size=(N_VIS, DIM_LATENT_L)).astype('float32'))
@@ -719,7 +720,7 @@ def generate_video(iteration, data):
     samples = samples[:4]
     wav(samples, iteration, 4, 'samples')
     # wav(data, iteration, BATCH_SIZE/4, 'train_data')
-
+'''
 # For reconstruction
 fixed_data, fixed_y = dev_gen().next()
 
@@ -837,7 +838,7 @@ with tf.Session() as session:
 
         # Generation and reconstruction
         if iteration % 1000 == 999:
-            generate_video(iteration, _data)
+            # generate_video(iteration, _data)
             reconstruct_video(iteration)
             disentangle(iteration)
 
