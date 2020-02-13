@@ -28,12 +28,12 @@ MODE = 'local_epce-z' # local_ep, local_epce-z, ali, alice-z
 POS_MODE = 'naive_mean_field' # gsp, naive_mean_field, inverse
 ALI_MODE = 'concat_x' # concat_x, concat_z, 3dcnn
 OP_DYN_MODE = 'res' # res, res_w
-BN_FLAG = False
+BN_FLAG = True
 BN_FLAG_G = BN_FLAG # batch norm in G
 BN_FLAG_E = BN_FLAG # batch norm in E
 BN_FLAG_D = BN_FLAG # batch norm in D
 # model size
-DIM_LATENT_G = 128 # global latent variable
+DIM_LATENT_G = 256 # global latent variable
 DIM_LATENT_L = 32 # local latent variable
 DIM_LATENT_T = DIM_LATENT_L # transformation latent variable
 DIM = 32 # model size of frame generator
@@ -174,35 +174,80 @@ def DynamicExtractor(z_l_pre):
 
 def Generator(z_g, z_l, labels):
     new_output_shape=OUTPUT_SHAPE[-1]/(2**4)
-    z_g = tf.reshape(z_g, [BATCH_SIZE, DIM_LATENT_G])
-    z_g = tf.tile(tf.expand_dims(z_g, axis=1), [1, new_output_shape*LEN, 1])
-    
     z_l = tf.reshape(z_l, [BATCH_SIZE, new_output_shape*LEN, DIM_LATENT_L])
-    labels = expand_labels(labels,l=new_output_shape*LEN)
-    labels = tf.reshape(labels, [BATCH_SIZE, LEN*new_output_shape, N_C])
-    z = tf.concat([z_g, z_l], axis=-1)
+    z_g = tf.reshape(z_g, [BATCH_SIZE, DIM_LATENT_G])
+    # z_g = tf.tile(tf.expand_dims(z_g, axis=1), [1, new_output_shape*LEN, 1])
+    z_g = lib.ops.linear.Linear('Extractor.G.Iutput',DIM_LATENT_G, OUTPUT_SHAPE[-1]/(4**4)*8*DIM*LEN, output)
+    z_g = tf.reshape(output, [BATCH_SIZE,8*DIM,LEN*OUTPUT_SHAPE[-1]/(4**4)])
+    
 
-    z = tf.reshape(z, [BATCH_SIZE*LEN*new_output_shape, DIM_LATENT_G+DIM_LATENT_L])
+    z_g_temp = LeakyReLU(z_g)
+    z_g_temp = lib.ops.deconv1d.Deconv1D('Generator.G.1', 8*DIM, 4*DIM, 5, output,stride=16)
+    z_g_temp = tf.reshape(output, [BATCH_SIZE,LEN*OUTPUT_SHAPE[-1]/(4**2),4*DIM])
+    
 
-    output = lib.ops.linear.Linear('Generator.Input', DIM_LATENT_G+DIM_LATENT_L, 8*DIM, z)
+
+    
+    # labels = expand_labels(labels,l=new_output_shape*LEN)
+    # labels = tf.reshape(labels, [BATCH_SIZE, LEN*new_output_shape, N_C])
+    z = tf.concat([z_g_temp, z_l], axis=-1)
+    z = tf.reshape(z, [BATCH_SIZE*LEN*new_output_shape, 4*DIM+DIM_LATENT_L])
+    output = lib.ops.linear.Linear('Generator.Input.1', 4*DIM+DIM_LATENT_L, 8*DIM, z)
     if BN_FLAG_G:
         output = lib.ops.batchnorm.Batchnorm('Generator.BN1', [0], output)
     output = tf.nn.relu(output)
-    output = tf.reshape(output, [BATCH_SIZE, 8*DIM, new_output_shape*LEN])
+    
 
+    output = tf.reshape(output, [BATCH_SIZE, 8*DIM, new_output_shape*LEN])
     output = lib.ops.deconv1d.Deconv1D('Generator.2', 8*DIM, 4*DIM, 5, output)
     if BN_FLAG_G:
         output = lib.ops.batchnorm.Batchnorm('Generator.BN2', [0,2], output)
     output = tf.nn.relu(output)
+
+    z_g_temp= LeakyReLU(z_g)
+    z_g_temp = lib.ops.deconv1d.Deconv1D('Generator.G.2', 8*DIM, 4*DIM, 5, output,stride=32)
+    z_g_temp = tf.reshape(output, [BATCH_SIZE,LEN*OUTPUT_SHAPE[-1]/(8),2*DIM])
+    
+    output = tf.concat([z_g_temp, output], axis=-1)
+    output = tf.reshape(output, [BATCH_SIZE*LEN*new_output_shape*2, 4*DIM+4*DIM])
+    output = lib.ops.linear.Linear('Generator.Input.2', 4*DIM+4*DIM, 4*DIM, z)
+    if BN_FLAG_G:
+        output = lib.ops.batchnorm.Batchnorm('Generator.BN3', [0], output)
+    output = tf.nn.relu(output)
+
 
     output = lib.ops.deconv1d.Deconv1D('Generator.3', 4*DIM, 2*DIM, 5, output)
     if BN_FLAG_G:
         output = lib.ops.batchnorm.Batchnorm('Generator.BN3', [0,2], output)
     output = tf.nn.relu(output)
 
+    z_g_temp= LeakyReLU(z_g)
+    z_g_temp = lib.ops.deconv1d.Deconv1D('Generator.G.2', 8*DIM, 2*DIM, 5, output,stride=64)
+    z_g_temp = tf.reshape(output, [BATCH_SIZE,LEN*OUTPUT_SHAPE[-1]/(4),2*DIM])
+    
+    output = tf.concat([z_g_temp, output], axis=-1)
+    output = tf.reshape(output, [BATCH_SIZE*LEN*new_output_shape*4, 2*DIM+2*DIM])
+    output = lib.ops.linear.Linear('Generator.Input.2', 2*DIM+2*DIM, 2*DIM, z)
+    if BN_FLAG_G:
+        output = lib.ops.batchnorm.Batchnorm('Generator.BN3', [0], output)
+    output = tf.nn.relu(output)
+
+
     output = lib.ops.deconv1d.Deconv1D('Generator.4', 2*DIM, DIM, 5, output)
     if BN_FLAG_G:
         output = lib.ops.batchnorm.Batchnorm('Generator.BN4', [0,2], output)
+    output = tf.nn.relu(output)
+
+    
+    z_g_temp= LeakyReLU(z_g)
+    z_g_temp = lib.ops.deconv1d.Deconv1D('Generator.G.3', 8*DIM, 1*DIM, 5, output,stride=128)
+    z_g_temp = tf.reshape(output, [BATCH_SIZE,LEN*OUTPUT_SHAPE[-1]/(2),1*DIM])
+    
+    output = tf.concat([z_g_temp, output], axis=-1)
+    output = tf.reshape(output, [BATCH_SIZE*LEN*new_output_shape*8, DIM+DIM])
+    output = lib.ops.linear.Linear('Generator.Input.3', DIM+DIM, DIM, z)
+    if BN_FLAG_G:
+        output = lib.ops.batchnorm.Batchnorm('Generator.BN5', [0], output)
     output = tf.nn.relu(output)
 
     output = lib.ops.deconv1d.Deconv1D('Generator.5', DIM, 1, 5, output)
