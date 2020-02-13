@@ -643,7 +643,7 @@ global_classifier_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
 
 global_classifier_loss_2nd = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
     logits=g_Classifier(fake_z_g),
-    labels=t_y,
+    labels=tt_y,
     name='gc2'
 ),name='mgc2')
 classg_params = lib.params_with_name('Classifier.G')
@@ -746,11 +746,12 @@ target_y = binarize_labels(target_y)
 # dis_y = tf.constant(binarize_labels(np.ones(BATCH_SIZE, dtype=int)))
 # dis_g = tf.constant(np.tile(np.random.normal(size=(1, DIM_LATENT_G)).astype('float32'), [BATCH_SIZE, 1]))
 # dis_x = Generator(dis_g, q_z_l, dis_y)
+source_z_l
 def disentangle(iteration):
     source_z_g = session.run(q_z_g, feed_dict={real_x_unit: source_data, real_y:source_y})
     source_z_l = session.run(q_z_l, feed_dict={real_x_unit: source_data, real_y:source_y})
     target_z_g = session.run(q_z_g, feed_dict={real_x_unit: target_data, real_y:target_y})
-    samples= session.run(Generator(target_z_g, source_z_l, target_y))
+    samples= Generator(target_z_g, source_z_l, target_y)
     samples = samples*15000.0
     tmp_list = []
     for i in xrange(4):
@@ -800,8 +801,6 @@ with tf.Session() as session:
            
         for i in xrange(CRITIC_ITERS):
             _data, _labels = gen.next()
-            _data_t, _labels_t = gen.next()
-
             '''
             _disc_cost, _ = session.run(
                 [disc_cost, disc_train_op],

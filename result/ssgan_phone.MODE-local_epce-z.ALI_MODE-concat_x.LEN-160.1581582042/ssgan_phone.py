@@ -750,7 +750,7 @@ def disentangle(iteration):
     source_z_g = session.run(q_z_g, feed_dict={real_x_unit: source_data, real_y:source_y})
     source_z_l = session.run(q_z_l, feed_dict={real_x_unit: source_data, real_y:source_y})
     target_z_g = session.run(q_z_g, feed_dict={real_x_unit: target_data, real_y:target_y})
-    samples= session.run(Generator(target_z_g, source_z_l, target_y))
+    samples= Generator(target_z_g, source_z_l, target_y)
     samples = samples*15000.0
     tmp_list = []
     for i in xrange(4):
@@ -800,8 +800,6 @@ with tf.Session() as session:
            
         for i in xrange(CRITIC_ITERS):
             _data, _labels = gen.next()
-            _data_t, _labels_t = gen.next()
-
             '''
             _disc_cost, _ = session.run(
                 [disc_cost, disc_train_op],

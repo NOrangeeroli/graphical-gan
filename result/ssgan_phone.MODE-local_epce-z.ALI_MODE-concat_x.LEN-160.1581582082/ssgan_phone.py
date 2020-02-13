@@ -800,8 +800,6 @@ with tf.Session() as session:
            
         for i in xrange(CRITIC_ITERS):
             _data, _labels = gen.next()
-            _data_t, _labels_t = gen.next()
-
             '''
             _disc_cost, _ = session.run(
                 [disc_cost, disc_train_op],
