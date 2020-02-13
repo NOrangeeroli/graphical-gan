@@ -593,7 +593,7 @@ real_y = tf.placeholder(tf.float32, shape=[BATCH_SIZE, N_C])
 q_z_l_pre = Extractor(real_x, real_y)
 q_z_g = G_Extractor(real_x, real_y)
 q_z_l = q_z_l_pre#DynamicExtractor(q_z_l_pre)
-rec_x = Generator(q_z_g, q_z_l, real_y)
+
 
 
 t_x_unit = tf.placeholder(tf.float32, shape=[BATCH_SIZE, LEN, OUTPUT_DIM])
@@ -607,8 +607,9 @@ p_y = t_y
 fake_x = Generator(p_z_g, p_z_l, p_y)
 
 fake_z_g = G_Extractor(fake_x, t_y)
+fake_z_l = Extractor(fake_x, t_y)
 
-
+rec_x = Generator(q_z_g, fake_z_l, real_y)
 
 
 
