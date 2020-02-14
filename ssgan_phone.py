@@ -199,7 +199,7 @@ def Generator(z_g, z_l, labels):
     
     cond = lib.ops.linear.Linear('Extractor.cond.1',DIM_LATENT_G, 4*DIM, z_g)
     output = tf.reshape(z_l, [BATCH_SIZE, DIM_LATENT_L, new_output_shape*LEN])
-    output = lib.ops.deconv1d.Deconv1D('Generator.2', DIM_LATENT_L, 4*DIM, 5, output,cond=cond)
+    output = lib.ops.deconv1d.Deconv1D('Generator.2', DIM_LATENT_L, 4*DIM, 5, output,cond=None)
     if BN_FLAG_G:
         output = lib.ops.batchnorm.Batchnorm('Generator.BN2', [0,2], output)
     output = tf.nn.relu(output)
@@ -217,7 +217,7 @@ def Generator(z_g, z_l, labels):
     # output = tf.reshape(output, [BATCH_SIZE, 4*DIM, LEN*OUTPUT_SHAPE[-1]/(8)])
 
     cond = lib.ops.linear.Linear('Extractor.cond.2',DIM_LATENT_G, 2*DIM, z_g)
-    output = lib.ops.deconv1d.Deconv1D('Generator.3', 4*DIM, 2*DIM, 5, output,cond=cond)
+    output = lib.ops.deconv1d.Deconv1D('Generator.3', 4*DIM, 2*DIM, 5, output,cond=None)
     if BN_FLAG_G:
         output = lib.ops.batchnorm.Batchnorm('Generator.BN4', [0,2], output)
     output = tf.nn.relu(output)
@@ -235,7 +235,7 @@ def Generator(z_g, z_l, labels):
     # output = tf.reshape(output, [BATCH_SIZE, 2*DIM, LEN*OUTPUT_SHAPE[-1]/(4)])
 
     cond = lib.ops.linear.Linear('Extractor.cond.3',DIM_LATENT_G, 1*DIM, z_g)
-    output = lib.ops.deconv1d.Deconv1D('Generator.4', 2*DIM, DIM, 5, output,cond=cond)
+    output = lib.ops.deconv1d.Deconv1D('Generator.4', 2*DIM, DIM, 5, output,cond=None)
     if BN_FLAG_G:
         output = lib.ops.batchnorm.Batchnorm('Generator.BN6', [0,2], output)
     output = tf.nn.relu(output)
