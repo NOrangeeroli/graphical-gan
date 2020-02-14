@@ -28,7 +28,7 @@ MODE = 'local_epce-z' # local_ep, local_epce-z, ali, alice-z
 POS_MODE = 'naive_mean_field' # gsp, naive_mean_field, inverse
 ALI_MODE = 'concat_x' # concat_x, concat_z, 3dcnn
 OP_DYN_MODE = 'res' # res, res_w
-BN_FLAG = True
+BN_FLAG = False
 BN_FLAG_G = BN_FLAG # batch norm in G
 BN_FLAG_E = BN_FLAG # batch norm in E
 BN_FLAG_D = BN_FLAG # batch norm in D
@@ -44,7 +44,7 @@ OUTPUT_SHAPE = [1,512] # data shape
 OUTPUT_DIM = np.prod(OUTPUT_SHAPE) # data dim
 N_C = 12 # number of classes
 # optimization
-LAMBDA = 1.0 # reconstruction
+LAMBDA = 0.3 # reconstruction
 LR = 1e-4 # learning rate
 BATCH_SIZE = 12 # batch size
 BETA1 = .5 # adam
@@ -731,6 +731,7 @@ def generate_video(iteration, data):
     # wav(data, iteration, BATCH_SIZE/4, 'train_data')
 '''
 # For reconstruction
+'''
 fixed_data, fixed_y = dev_gen().next()
 
 fixed_y = binarize_labels(fixed_y)
@@ -756,8 +757,9 @@ def reconstruct_video(iteration):
         tmp_list.append(rec_samples[i])
     rec_samples = np.vstack(tmp_list)
     wav(rec_samples, iteration, 4*2, 'reconstruction')
-
+'''
 # disentangle
+'''
 source_data, source_y = dev_gen().next()
 source_y = binarize_labels(source_y)
 target_data, target_y = t_data,tt_y
@@ -781,7 +783,7 @@ def disentangle(iteration):
     samples = np.vstack(tmp_list)
     wav(samples, iteration, 4*3, 'disentangle')
 
-
+'''
 '''
 Train loop
 '''
@@ -867,13 +869,13 @@ with tf.Session() as session:
         if (iteration < 4) or (iteration<11000 and iteration>10000)or (iteration % 100 == 99):
             lib.plot.flush(outf, logfile)
         lib.plot.tick()
-
+        '''
         # Generation and reconstruction
         if iteration % 1000 == 999:
             # generate_video(iteration, _data)
             reconstruct_video(iteration)
             disentangle(iteration)
-
+        '''
         # Save model
         if iteration == ITERS - 1:
             save_path = saver.save(session, os.path.join(outf, '{}_model_{}.ckpt'.format(iteration, MODE)))

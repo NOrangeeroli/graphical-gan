@@ -46,7 +46,7 @@ N_C = 12 # number of classes
 # optimization
 LAMBDA = 0.3 # reconstruction
 LR = 1e-4 # learning rate
-BATCH_SIZE = 48 # batch size
+BATCH_SIZE = 12 # batch size
 BETA1 = .5 # adam
 BETA2 = .999 # adam
 ITERS = 100000 # number of iterations to train
@@ -745,7 +745,7 @@ with tf.Session() as session:
                 feed_dict={real_x_unit: _data, real_y:_labels}
             )
             '''
-            
+            ''' 
             _cg_cost, _ = session.run(
                 [global_classifier_loss, cg_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels}
@@ -755,11 +755,11 @@ with tf.Session() as session:
                 [local_classifier_loss, cl_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels}
             )
-            
+            '''
         if iteration > 0:
             lib.plot.plot('gc', _gen_cost)
-            lib.plot.plot('cg', _cg_cost)
-            lib.plot.plot('cl', _cl_cost)
+            #lib.plot.plot('cg', _cg_cost)
+            #lib.plot.plot('cl', _cl_cost)
             if rec_penalty is not None:
                 lib.plot.plot('rc', _rec_cost)
         #lib.plot.plot('dc', _disc_cost)
