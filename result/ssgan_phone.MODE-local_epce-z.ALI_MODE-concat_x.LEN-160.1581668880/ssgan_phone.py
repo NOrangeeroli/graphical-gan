@@ -615,7 +615,7 @@ fake_x = Generator(p_z_g, p_z_l, p_y)
 fake_z_g = G_Extractor(fake_x, t_y)
 fake_z_l = Extractor(fake_x, t_y)
 
-rec_x = Generator(q_z_g, q_z_l, real_y)
+rec_x = Generator(s_z_g, q_z_l, real_y)
 
 
 
@@ -835,12 +835,11 @@ with tf.Session() as session:
                 feed_dict={real_x_unit: _data, real_y:_labels}
             )
             '''
-            ''' 
+            
             _cg_cost,_cg_cost2, _ = session.run(
                 [global_classifier_loss,global_classifier_loss_2nd, cg_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels,t_x: _data_t,t_y:_labels_t}
             )
-            '''
             '''
             _cl_cost, _ = session.run(
                 [local_classifier_loss, cl_train_op],
@@ -849,8 +848,8 @@ with tf.Session() as session:
             '''
         if iteration > 0:
             lib.plot.plot('gc', _gen_cost)
-            #lib.plot.plot('cg', _cg_cost)
-            #lib.plot.plot('cg2', _cg_cost2)
+            lib.plot.plot('cg', _cg_cost)
+            lib.plot.plot('cg2', _cg_cost2)
             #lib.plot.plot('cl', _cl_cost)
             if rec_penalty is not None:
                 lib.plot.plot('rc', _rec_cost)

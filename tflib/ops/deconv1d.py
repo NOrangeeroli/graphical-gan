@@ -112,7 +112,10 @@ def Deconv1D(
                 padding=padding,
                 data_format='NWC'
                 )
-            result  = tf.multiply(result,tf.reshape(cond,[input_shape[0]s,1,output_dim]))
+            f = tf.shape(result)
+            result  = tf.multiply(result,tf.reshape(cond,[input_shape[0],1,output_dim]))
+            print f
+            print tf.shape(result)
         else:
             result = tf.nn.conv1d_transpose(
                 input=inputs, 

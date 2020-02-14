@@ -615,7 +615,7 @@ fake_x = Generator(p_z_g, p_z_l, p_y)
 fake_z_g = G_Extractor(fake_x, t_y)
 fake_z_l = Extractor(fake_x, t_y)
 
-rec_x = Generator(q_z_g, q_z_l, real_y)
+rec_x = Generator(s_z_g, q_z_l, real_y)
 
 
 

@@ -615,7 +615,7 @@ fake_x = Generator(p_z_g, p_z_l, p_y)
 fake_z_g = G_Extractor(fake_x, t_y)
 fake_z_l = Extractor(fake_x, t_y)
 
-rec_x = Generator(q_z_g, q_z_l, real_y)
+rec_x = Generator(s_z_g, q_z_l, real_y)
 
 
 
@@ -849,8 +849,8 @@ with tf.Session() as session:
             '''
         if iteration > 0:
             lib.plot.plot('gc', _gen_cost)
-            #lib.plot.plot('cg', _cg_cost)
-            #lib.plot.plot('cg2', _cg_cost2)
+            lib.plot.plot('cg', _cg_cost)
+            lib.plot.plot('cg2', _cg_cost2)
             #lib.plot.plot('cl', _cl_cost)
             if rec_penalty is not None:
                 lib.plot.plot('rc', _rec_cost)
