@@ -29,7 +29,8 @@ def Deconv1D(
     gain=1.,
     mask_type=None,
     stride=2,
-    padding='SAME'
+    padding='SAME',
+    cond = None
     ):
     """
     inputs: tensor of shape (batch size, height, width, input_dim)
@@ -75,6 +76,9 @@ def Deconv1D(
             filter_values
         )
 
+        
+
+
         if weightnorm==None:
             weightnorm = _default_weightnorm
         if weightnorm:
@@ -86,6 +90,7 @@ def Deconv1D(
             with tf.name_scope('weightnorm') as scope:
                 norms = tf.sqrt(tf.reduce_sum(tf.square(filters), reduction_indices=[0,1]))
                 filters = filters * tf.expand_dims(target_norms / norms, 1)
+        
 
 
         inputs = tf.transpose(inputs, [0,2,1], name='NCW_to_NWC')
@@ -98,14 +103,25 @@ def Deconv1D(
         if padding == 'VALID':
             output_shape = tf.stack([input_shape[0], stride*(input_shape[1] - 1) + filter_size, output_dim])
 
-        result = tf.nn.conv1d_transpose(
-            input=inputs, 
-            filters=filters,
-            output_shape=output_shape, 
-            strides=stride,
-            padding=padding,
-            data_format='NWC'
-        )
+        if cond is not None:
+            result = tf.nn.conv1d_transpose(
+                input=inputs, 
+                filters=filters,
+                output_shape=output_shape, 
+                strides=stride,
+                padding=padding,
+                data_format='NWC'
+                )
+            result  = tf.multiply(result,tf.reshape(cond,[input_shape[0]s,1,output_dim]))
+        else:
+            result = tf.nn.conv1d_transpose(
+                input=inputs, 
+                filters=filters,
+                output_shape=output_shape, 
+                strides=stride,
+                padding=padding,
+                data_format='NWC'
+            )
 
         if biases:
             _biases = lib.param(
