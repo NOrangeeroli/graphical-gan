@@ -817,7 +817,6 @@ with tf.Session() as session:
             _labels_t=np.array([x[1] for x in al])
             
             _data_s, _labels_s = gen.next()
-            #print _labels, _labels_s
             assert (_labels==_labels_s).all()
             assert (_labels != _labels_t).any()
             if rec_penalty is None:

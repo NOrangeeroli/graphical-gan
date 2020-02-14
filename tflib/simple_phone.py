@@ -60,9 +60,8 @@ def phone_generator_audio(data_all, clip_length, seq_length, batch_size):
     # digit_size = 28
     
     def get_epoch():
-        rng_state = np.random.get_state()
         al=list(zip(audios_init,list(labels_init)))
-        np.random.shuffle(al)
+        #np.random.shuffle(al)
         audios_pre=[x[0] for x in al]
         labels=[x[1] for x in al]
         #np.random.shuffle(audios_pre)
@@ -80,7 +79,8 @@ def phone_generator_audio(data_all, clip_length, seq_length, batch_size):
 
         data = []
         data_label = []
-        for i in xrange(int(len(audios[0])/(seq_length*clip_length)*2)):
+        min_len=np.min([len(x) for x in audios])
+        for i in xrange(int(min_len)/(seq_length*clip_length)*2):
             data_len=len(data)
             for a,l in zip(audios,labels):
                 if i*seq_length*clip_length>=len(a):
@@ -90,8 +90,7 @@ def phone_generator_audio(data_all, clip_length, seq_length, batch_size):
                     new=np.pad(new,(0,seq_length*clip_length-len(new)),'constant')
                 data.append( new )
                 data_label.append(l)
-            if len(data)==data_len:
-                break
+            break
             
         data=np.stack(data)
         data = data.reshape(-1, seq_length, clip_length)
