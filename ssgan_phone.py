@@ -636,6 +636,7 @@ elif MODE in ['ali', 'alice-z']:
 
 gen_params = lib.params_with_name('Generator')
 ext_params = lib.params_with_name('Extractor')
+ext_g_params = lib.params_with_name('Extractor.G')
 disc_params = lib.params_with_name('Discriminator')
 '''
 local_classifier_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
@@ -797,11 +798,12 @@ with tf.Session() as session:
 
     gen_num = tf.reduce_sum([tf.reduce_prod(tf.shape(t)) for t in gen_params])
     ext_num = tf.reduce_sum([tf.reduce_prod(tf.shape(t)) for t in ext_params])
+    ext_g_num = tf.reduce_sum([tf.reduce_prod(tf.shape(t)) for t in ext_g_params])
     disc_num = tf.reduce_sum([tf.reduce_prod(tf.shape(t)) for t in disc_params])
     c_num = tf.reduce_sum([tf.reduce_prod(tf.shape(t)) for t in classl_params+classg_params])
     # disc_num = tf.reduce_sum([tf.reduce_prod(tf.shape(t)) for t in disc_params])
 
-    print '\nNumber of parameters in each player', session.run([gen_num, ext_num, c_num, gen_num+ext_num+c_num]), '\n'
+    print '\nNumber of parameters in each player', session.run([gen_num, ext_num, ext_g_params, c_num, gen_num+ext_num+c_num]), '\n'
     with open(logfile,'a') as f:
         f.write('\nNumber of parameters in each player' + str(session.run([gen_num, ext_num, gen_num+ext_num])) + '\n')
 
