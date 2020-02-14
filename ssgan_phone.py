@@ -803,7 +803,7 @@ with tf.Session() as session:
     c_num = tf.reduce_sum([tf.reduce_prod(tf.shape(t)) for t in classl_params+classg_params])
     # disc_num = tf.reduce_sum([tf.reduce_prod(tf.shape(t)) for t in disc_params])
 
-    print '\nNumber of parameters in each player', session.run([gen_num, ext_num, ext_g_params, c_num, gen_num+ext_num+c_num]), '\n'
+    print '\nNumber of parameters in each player', session.run([gen_num, ext_num, ext_g_num, c_num, gen_num+ext_num+c_num]), '\n'
     with open(logfile,'a') as f:
         f.write('\nNumber of parameters in each player' + str(session.run([gen_num, ext_num, gen_num+ext_num])) + '\n')
 
@@ -821,8 +821,8 @@ with tf.Session() as session:
             
             # _data_s, _labels_s = gen.next()
             
-            assert (_labels==_labels_s).all()
-            assert (_labels != _labels_t).any()
+            #assert (_labels==_labels_s).all()
+            #assert (_labels != _labels_t).any()
             if rec_penalty is None:
                 _gen_cost, _ = session.run([gen_cost, gen_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels,
@@ -831,7 +831,7 @@ with tf.Session() as session:
             else:
                 _gen_cost, _rec_cost, _ = session.run([gen_cost, rec_penalty, gen_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels,
-                '''t_x: _data_t,t_y:_labels_t,same_x:_data_s,same_y:_labels_s'''
+                #'''t_x: _data_t,t_y:_labels_t,same_x:_data_s,same_y:_labels_s'''
                 })
            
 
