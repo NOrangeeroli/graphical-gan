@@ -36,7 +36,7 @@ BN_FLAG_D = BN_FLAG # batch norm in D
 DIM_LATENT_G = 128 # global latent variable
 DIM_LATENT_L = 32 # local latent variable
 DIM_LATENT_T = DIM_LATENT_L # transformation latent variable
-DIM = 16 # model size of frame generator
+DIM = 32 # model size of frame generator
 DIM_OP = 256 # model size of the dynamic operator
 # data
 LEN = 160 # data length
@@ -811,22 +811,26 @@ with tf.Session() as session:
         if iteration > 0:
             _data, _labels = gen.next()
             
-            _data_t, _labels_t = gen.next()
-            al=list(zip(_data_t,_labels_t))
-            np.random.shuffle(al)
-            _data_t=[x[0] for x in al]
-            _labels_t=np.array([x[1] for x in al])
+            # _data_t, _labels_t = gen.next()
+            # al=list(zip(_data_t,_labels_t))
+            # np.random.shuffle(al)
+            # _data_t=[x[0] for x in al]
+            # _labels_t=np.array([x[1] for x in al])
             
-            _data_s, _labels_s = gen.next()
-            #print _labels, _labels_s
+            # _data_s, _labels_s = gen.next()
+            
             assert (_labels==_labels_s).all()
             assert (_labels != _labels_t).any()
             if rec_penalty is None:
                 _gen_cost, _ = session.run([gen_cost, gen_train_op],
-                feed_dict={real_x_unit: _data, real_y:_labels,t_x: _data_t,t_y:_labels_t})
+                feed_dict={real_x_unit: _data, real_y:_labels,
+                t_x: _data_t,t_y:_labels_t
+                })
             else:
                 _gen_cost, _rec_cost, _ = session.run([gen_cost, rec_penalty, gen_train_op],
-                feed_dict={real_x_unit: _data, real_y:_labels,t_x: _data_t,t_y:_labels_t,same_x:_data_s,same_y:_labels_s})
+                feed_dict={real_x_unit: _data, real_y:_labels,
+                '''t_x: _data_t,t_y:_labels_t,same_x:_data_s,same_y:_labels_s'''
+                })
            
 
             '''
