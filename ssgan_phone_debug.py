@@ -180,11 +180,11 @@ def Generator(z_g, z_l, labels):
     z_l = tf.reshape(z_l, [BATCH_SIZE, new_output_shape*LEN, DIM_LATENT_L])
     labels = expand_labels(labels,l=new_output_shape*LEN)
     labels = tf.reshape(labels, [BATCH_SIZE, LEN*new_output_shape, N_C])
-    z = tf.concat([z_g, z_l], axis=-1)
+    z = tf.concat([z_g, labels], axis=-1)
 
-    z = tf.reshape(z, [BATCH_SIZE*LEN*new_output_shape, DIM_LATENT_G+DIM_LATENT_L])
+    z = tf.reshape(z, [BATCH_SIZE*LEN*new_output_shape, N_C+DIM_LATENT_L])
 
-    output = lib.ops.linear.Linear('Generator.Input', DIM_LATENT_G+DIM_LATENT_L, 8*DIM, z)
+    output = lib.ops.linear.Linear('Generator.Input', N_C+DIM_LATENT_L, 8*DIM, z)
     if BN_FLAG_G:
         output = lib.ops.batchnorm.Batchnorm('Generator.BN1', [0], output)
     output = tf.nn.relu(output)
