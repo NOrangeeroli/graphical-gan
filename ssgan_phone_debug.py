@@ -184,7 +184,7 @@ def Generator(z_g, z_l, labels):
 
     z = tf.reshape(z, [BATCH_SIZE*LEN*new_output_shape, N_C+DIM_LATENT_L])
 
-    output = lib.ops.linear.Linear('Generator.Input', N_C+DIM_LATENT_L, 8*DIM, z)
+    output = lib.ops.linear.Linear('Generator.Input', DIM_LATENT_L+N_C, 8*DIM, z)
     if BN_FLAG_G:
         output = lib.ops.batchnorm.Batchnorm('Generator.BN1', [0], output)
     output = tf.nn.relu(output)
@@ -631,7 +631,7 @@ elif MODE == 'local_epce-z':
     latent_distance= lib.utils.distance.distance(q_z_g, s_z_g, 'l2')
     latent_l_distance = lib.utils.distance.distance(q_z_l, s_z_l, 'l2')
 
-    rec_penalty*= latent_distance
+    #rec_penalty*= latent_distance
     gen_cost, disc_cost, _, _, gen_train_op, disc_train_op, cl_train_op, cg_train_op = \
     lib.objs.gan_inference.weighted_local_epce(disc_fake, 
         disc_real,
@@ -773,16 +773,16 @@ with tf.Session() as session:
         if iteration > 0:
             _data, _labels = gen.next()
             
-            # _data_t, _labels_t = gen.next()
-            # al=list(zip(_data_t,_labels_t))
-            # np.random.shuffle(al)
-            # _data_t=[x[0] for x in al]
-            # _labels_t=np.array([x[1] for x in al])
+            _data_t, _labels_t = gen.next()
+            al=list(zip(_data_t,_labels_t))
+            np.random.shuffle(al)
+            _data_t=[x[0] for x in al]
+            _labels_t=np.array([x[1] for x in al])
             
             _data_s, _labels_s = gen.next()
             
             assert (_labels==_labels_s).all()
-            #assert (_labels != _labels_t).any()
+            assert (_labels != _labels_t).any()
             if rec_penalty is None:
                 _gen_cost, _ = session.run([gen_cost, gen_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels,
@@ -791,7 +791,7 @@ with tf.Session() as session:
             else:
                 _gen_cost, _rec_cost, _ = session.run([gen_cost, rec_penalty, gen_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels,
-                #'''t_x: _data_t,t_y:_labels_t,
+                t_x: _data_t,t_y:_labels_t,
                 same_x:_data_s,same_y:_labels_s
                 })
             ld,lld= session.run([latent_distance,rec],feed_dict={real_x_unit: _data, real_y:_labels,
@@ -806,12 +806,12 @@ with tf.Session() as session:
                 feed_dict={real_x_unit: _data, real_y:_labels}
             )
             '''
-            ''' 
+            
             _cg_cost,_cg_cost2, _ = session.run(
                 [global_classifier_loss,global_classifier_loss_2nd, cg_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels,t_x: _data_t,t_y:_labels_t}
             )
-            '''
+            
             '''
             _cl_cost, _ = session.run(
                 [local_classifier_loss, cl_train_op],
@@ -820,8 +820,8 @@ with tf.Session() as session:
             '''
         if iteration > 0:
             lib.plot.plot('gc', _gen_cost)
-            #lib.plot.plot('cg', _cg_cost)
-            #lib.plot.plot('cg2', _cg_cost2)
+            lib.plot.plot('cg', _cg_cost)
+            lib.plot.plot('cg2', _cg_cost2)
             #lib.plot.plot('cl', _cl_cost)
             if rec_penalty is not None:
                 lib.plot.plot('rc', _rec_cost)
