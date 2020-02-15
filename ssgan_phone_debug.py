@@ -590,6 +590,7 @@ elif MODE in ['ali', 'alice-z']:
 gen_params = lib.params_with_name('Generator')
 ext_params = lib.params_with_name('Extractor')
 ext_g_params = lib.params_with_name('Extractor.G')
+ext_l_params = [x for x in ext_params if x not in ext_g_params]
 disc_params = lib.params_with_name('Discriminator')
 '''
 local_classifier_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
@@ -638,9 +639,9 @@ elif MODE == 'local_epce-z':
         0,
         [global_classifier_loss,global_classifier_loss_2nd], 
         classl_params,
-        classg_params,
+        classg_params+ext_g_params,
         ratio, 
-        gen_params+ext_params, 
+        gen_params+ext_l_params, 
         disc_params, 
         lr=LR, 
         beta1=BETA1, 
