@@ -689,7 +689,7 @@ def generate_video(iteration, data):
     # wav(data, iteration, BATCH_SIZE/4, 'train_data')
 '''
 # For reconstruction
-'''
+
 fixed_data, fixed_y = dev_gen().next()
 
 fixed_y = binarize_labels(fixed_y)
@@ -715,9 +715,9 @@ def reconstruct_video(iteration):
         tmp_list.append(rec_samples[i])
     rec_samples = np.vstack(tmp_list)
     wav(rec_samples, iteration, 4*2, 'reconstruction')
-'''
+
 # disentangle
-'''
+
 source_data, source_y = dev_gen().next()
 source_y = binarize_labels(source_y)
 target_data, target_y = t_data,tt_y
@@ -741,7 +741,7 @@ def disentangle(iteration):
     samples = np.vstack(tmp_list)
     wav(samples, iteration, 4*3, 'disentangle')
 
-'''
+
 '''
 Train loop
 '''
@@ -837,13 +837,13 @@ with tf.Session() as session:
             except:
                 pass
         lib.plot.tick()
-        '''
+    
         # Generation and reconstruction
         if iteration % 1000 == 999:
             # generate_video(iteration, _data)
             reconstruct_video(iteration)
             disentangle(iteration)
-        '''
+        
         # Save model
-        if iteration == ITERS - 1:
+        if iteration%1000 == 999:
             save_path = saver.save(session, os.path.join(outf, '{}_model_{}.ckpt'.format(iteration, MODE)))
