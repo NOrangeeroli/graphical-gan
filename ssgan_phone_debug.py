@@ -33,7 +33,7 @@ BN_FLAG_G = BN_FLAG # batch norm in G
 BN_FLAG_E = BN_FLAG # batch norm in E
 BN_FLAG_D = BN_FLAG # batch norm in D
 # model size
-DIM_LATENT_G = 128 # global latent variable
+DIM_LATENT_G = 12 # global latent variable
 DIM_LATENT_L = 32 # local latent variable
 DIM_LATENT_T = DIM_LATENT_L # transformation latent variable
 DIM = 32 # model size of frame generator
@@ -552,6 +552,8 @@ same_y = tf.placeholder(tf.float32, shape=[BATCH_SIZE, N_C])
 
 # s_z_l=Extractor(same_x, same_y)
 s_z_g = G_Extractor(same_x, same_y)
+s_z_l= Extractor(same_x, same_y)
+
 
 t_x_unit = tf.placeholder(tf.float32, shape=[BATCH_SIZE, LEN, OUTPUT_DIM])
 t_x = t_x_unit/15000.0
@@ -625,6 +627,11 @@ if MODE == 'local_ep':
 
 elif MODE == 'local_epce-z':
     rec_penalty = LAMBDA*lib.utils.distance.distance(real_x, rec_x, 'l2')
+    rec= rec_penalty
+    latent_distance= lib.utils.distance.distance(q_z_g, s_z_g, 'l2')
+    latent_l_distance = lib.utils.distance.distance(q_z_l, s_z_l, 'l2')
+
+    rec_penalty*= latent_distance
     gen_cost, disc_cost, _, _, gen_train_op, disc_train_op, cl_train_op, cg_train_op = \
     lib.objs.gan_inference.weighted_local_epce(disc_fake, 
         disc_real,
@@ -772,9 +779,9 @@ with tf.Session() as session:
             # _data_t=[x[0] for x in al]
             # _labels_t=np.array([x[1] for x in al])
             
-            # _data_s, _labels_s = gen.next()
+            _data_s, _labels_s = gen.next()
             
-            #assert (_labels==_labels_s).all()
+            assert (_labels==_labels_s).all()
             #assert (_labels != _labels_t).any()
             if rec_penalty is None:
                 _gen_cost, _ = session.run([gen_cost, gen_train_op],
@@ -784,9 +791,14 @@ with tf.Session() as session:
             else:
                 _gen_cost, _rec_cost, _ = session.run([gen_cost, rec_penalty, gen_train_op],
                 feed_dict={real_x_unit: _data, real_y:_labels,
-                #'''t_x: _data_t,t_y:_labels_t,same_x:_data_s,same_y:_labels_s'''
+                #'''t_x: _data_t,t_y:_labels_t,
+                same_x:_data_s,same_y:_labels_s
                 })
-           
+            ld,lld= session.run([latent_distance,rec],feed_dict={real_x_unit: _data, real_y:_labels,
+                #'''t_x: _data_t,t_y:_labels_t,
+                same_x:_data_s,same_y:_labels_s
+                })
+
 
             '''
             _disc_cost, _ = session.run(
@@ -813,12 +825,17 @@ with tf.Session() as session:
             #lib.plot.plot('cl', _cl_cost)
             if rec_penalty is not None:
                 lib.plot.plot('rc', _rec_cost)
+                
         #lib.plot.plot('dc', _disc_cost)
         lib.plot.plot('time', time.time() - start_time)
 
         # Write logs
         if (iteration < 4) or (iteration<11000 and iteration>10000)or (iteration % 100 == 99):
             lib.plot.flush(outf, logfile)
+            try:
+                print ld,lld
+            except:
+                pass
         lib.plot.tick()
         '''
         # Generation and reconstruction
