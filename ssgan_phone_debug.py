@@ -180,7 +180,7 @@ def Generator(z_g, z_l, labels):
     z_l = tf.reshape(z_l, [BATCH_SIZE, new_output_shape*LEN, DIM_LATENT_L])
     labels = expand_labels(labels,l=new_output_shape*LEN)
     labels = tf.reshape(labels, [BATCH_SIZE, LEN*new_output_shape, N_C])
-    z = tf.concat([z_g, labels], axis=-1)
+    z = tf.concat([z_l, labels], axis=-1)
 
     z = tf.reshape(z, [BATCH_SIZE*LEN*new_output_shape, N_C+DIM_LATENT_L])
 
