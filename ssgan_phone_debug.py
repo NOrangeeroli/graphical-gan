@@ -768,83 +768,83 @@ with tf.Session() as session:
     with open(logfile,'a') as f:
         f.write('\nNumber of parameters in each player' + str(session.run([gen_num, ext_num, gen_num+ext_num])) + '\n')
 
-    # for iteration in xrange(ITERS):
-    #     start_time = time.time()
+    for iteration in xrange(ITERS):
+        start_time = time.time()
         
-    #     if iteration > 0:
-    #         _data, _labels = gen.next()
+        if iteration > 0:
+            _data, _labels = gen.next()
             
-    #         _data_t, _labels_t = gen.next()
-    #         al=list(zip(_data_t,_labels_t))
-    #         np.random.shuffle(al)
-    #         _data_t=[x[0] for x in al]
-    #         _labels_t=np.array([x[1] for x in al])
+            _data_t, _labels_t = gen.next()
+            al=list(zip(_data_t,_labels_t))
+            np.random.shuffle(al)
+            _data_t=[x[0] for x in al]
+            _labels_t=np.array([x[1] for x in al])
             
-    #         _data_s, _labels_s = gen.next()
+            _data_s, _labels_s = gen.next()
             
-    #         assert (_labels==_labels_s).all()
-    #         assert (_labels != _labels_t).any()
-    #         if rec_penalty is None:
-    #             _gen_cost, _ = session.run([gen_cost, gen_train_op],
-    #             feed_dict={real_x_unit: _data, real_y:_labels,
-    #             t_x: _data_t,t_y:_labels_t
-    #             })
-    #         else:
-    #             _gen_cost, _rec_cost, _ = session.run([gen_cost, rec_penalty, gen_train_op],
-    #             feed_dict={real_x_unit: _data, real_y:_labels,
-    #             t_x: _data_t,t_y:_labels_t,
-    #             same_x:_data_s,same_y:_labels_s
-    #             })
-    #         ld,lld= session.run([latent_distance,rec],feed_dict={real_x_unit: _data, real_y:_labels,
-    #             #'''t_x: _data_t,t_y:_labels_t,
-    #             same_x:_data_s,same_y:_labels_s
-    #             })
+            assert (_labels==_labels_s).all()
+            assert (_labels != _labels_t).any()
+            if rec_penalty is None:
+                _gen_cost, _ = session.run([gen_cost, gen_train_op],
+                feed_dict={real_x_unit: _data, real_y:_labels,
+                t_x: _data_t,t_y:_labels_t
+                })
+            else:
+                _gen_cost, _rec_cost, _ = session.run([gen_cost, rec_penalty, gen_train_op],
+                feed_dict={real_x_unit: _data, real_y:_labels,
+                t_x: _data_t,t_y:_labels_t,
+                same_x:_data_s,same_y:_labels_s
+                })
+            ld,lld= session.run([latent_distance,rec],feed_dict={real_x_unit: _data, real_y:_labels,
+                #'''t_x: _data_t,t_y:_labels_t,
+                same_x:_data_s,same_y:_labels_s
+                })
 
 
-    #         '''
-    #         _disc_cost, _ = session.run(
-    #             [disc_cost, disc_train_op],
-    #             feed_dict={real_x_unit: _data, real_y:_labels}
-    #         )
-    #         '''
+            '''
+            _disc_cost, _ = session.run(
+                [disc_cost, disc_train_op],
+                feed_dict={real_x_unit: _data, real_y:_labels}
+            )
+            '''
             
-    #         _cg_cost,_cg_cost2, _ = session.run(
-    #             [global_classifier_loss,global_classifier_loss_2nd, cg_train_op],
-    #             feed_dict={real_x_unit: _data, real_y:_labels,t_x: _data_t,t_y:_labels_t}
-    #         )
+            _cg_cost,_cg_cost2, _ = session.run(
+                [global_classifier_loss,global_classifier_loss_2nd, cg_train_op],
+                feed_dict={real_x_unit: _data, real_y:_labels,t_x: _data_t,t_y:_labels_t}
+            )
             
-    #         '''
-    #         _cl_cost, _ = session.run(
-    #             [local_classifier_loss, cl_train_op],
-    #             feed_dict={real_x_unit: _data, real_y:_labels}
-    #         )
-    #         '''
-    #     if iteration > 0:
-    #         lib.plot.plot('gc', _gen_cost)
-    #         lib.plot.plot('cg', _cg_cost)
-    #         lib.plot.plot('cg2', _cg_cost2)
-    #         #lib.plot.plot('cl', _cl_cost)
-    #         if rec_penalty is not None:
-    #             lib.plot.plot('rc', _rec_cost)
+            '''
+            _cl_cost, _ = session.run(
+                [local_classifier_loss, cl_train_op],
+                feed_dict={real_x_unit: _data, real_y:_labels}
+            )
+            '''
+        if iteration > 0:
+            lib.plot.plot('gc', _gen_cost)
+            lib.plot.plot('cg', _cg_cost)
+            lib.plot.plot('cg2', _cg_cost2)
+            #lib.plot.plot('cl', _cl_cost)
+            if rec_penalty is not None:
+                lib.plot.plot('rc', _rec_cost)
                 
-    #     #lib.plot.plot('dc', _disc_cost)
-    #     lib.plot.plot('time', time.time() - start_time)
+        #lib.plot.plot('dc', _disc_cost)
+        lib.plot.plot('time', time.time() - start_time)
 
-    #     # Write logs
-    #     if (iteration < 4) or (iteration<11000 and iteration>10000)or (iteration % 100 == 99):
-    #         lib.plot.flush(outf, logfile)
-    #         try:
-    #             print ld,lld
-    #         except:
-    #             pass
-    #     lib.plot.tick()
+        # Write logs
+        if (iteration < 4) or (iteration<11000 and iteration>10000)or (iteration % 100 == 99):
+            lib.plot.flush(outf, logfile)
+            try:
+                print ld,lld
+            except:
+                pass
+        lib.plot.tick()
     
-    #     # Generation and reconstruction
-    #     if iteration % 1000 == 999:
-    #         # generate_video(iteration, _data)
-    #         reconstruct_video(iteration)
-    #         disentangle(iteration)
+        # Generation and reconstruction
+        if iteration % 1000 == 999:
+            # generate_video(iteration, _data)
+            reconstruct_video(iteration)
+            disentangle(iteration)
         
-    #     # Save model
-    #     if iteration%1000 == 999:
-    #         save_path = saver.save(session, os.path.join(outf, '{}_model_{}.ckpt'.format(iteration, MODE)))
+        # Save model
+        if iteration%1000 == 999:
+            save_path = saver.save(session, os.path.join(outf, '{}_model_{}.ckpt'.format(iteration, MODE)))
