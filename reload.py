@@ -751,10 +751,16 @@ merge = tf.summary.merge_all()
 # saver = tf.train.Saver()
 saver = tf.train.Saver()
 with tf.Session() as session:
-    session.run(init)
-    # test_total_batch = int(len(test_label)/batch_size)
+    
+	session.run(tf.global_variables_initializer())
+    
     #ckpt = tf.train.latest_checkpoint('./result/ssgan_phone_debug.MODE-local_epce-z.ALI_MODE-concat_x.LEN-160.1581765501/','checkpoint')
     #saver.restore(session, ckpt)
+    gen_num = tf.reduce_sum([tf.reduce_prod(tf.shape(t)) for t in gen_params])
+    ext_num = tf.reduce_sum([tf.reduce_prod(tf.shape(t)) for t in ext_params])
+    ext_g_num = tf.reduce_sum([tf.reduce_prod(tf.shape(t)) for t in ext_g_params])
+    disc_num = tf.reduce_sum([tf.reduce_prod(tf.shape(t)) for t in disc_params])
+    c_num = tf.reduce_sum([tf.reduce_prod(tf.shape(t)) for t in classl_params+classg_params])
     print('finish loading model!')
     #reconstruct_video(0)
     #disentangle(0)
